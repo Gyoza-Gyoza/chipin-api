@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter,status
 from pydantic import BaseModel
 from database import get_connection
 
@@ -14,7 +14,10 @@ class User(BaseModel):
     first_name: str
     last_name: str
 
-@router.post("/create_user")
+@router.post(
+    "/users",
+status_code = status.HTTP_201_CREATED
+)
 def create_user(user: User):
     conn = get_connection()
     cursor = conn.cursor()
@@ -26,10 +29,14 @@ def create_user(user: User):
                    (user.username, user.password, user.email, user.first_name, user.last_name))
 
     conn.commit()
+    cursor.close()
     conn.close()
     return {f"message": f"{user.username} created successfully"}
 
-@router.get("/users")
+@router.get(
+    "/users",
+    status_code = status.HTTP_200_OK
+)
 def get_users():
     conn = get_connection()
     cursor = conn.cursor()
@@ -38,6 +45,7 @@ def get_users():
     SELECT username, password, email, first_name, last_name FROM users""")
 
     users = cursor.fetchall()
+    cursor.close()
     conn.close()
     return users
 
@@ -48,12 +56,13 @@ def get_user(user_id: str):
 
     cursor.execute("""
     SELECT username, password, email, first_name, last_name FROM users WHERE user_id = %(id)s""", {'id': user_id})
-    user = cursor.fetchone()
 
+    user = cursor.fetchone()
+    cursor.close()
     conn.close()
     return user
 
-@router.put("/update_user/{user_id}")
+@router.put("/users/{user_id}")
 def update_user(user_id: str, user: User):
     conn = get_connection()
     cursor = conn.cursor()
@@ -73,11 +82,12 @@ def update_user(user_id: str, user: User):
                     'password': user.password})
 
     conn.commit()
+    cursor.close()
     conn.close()
 
     return {f"message": f"{user.username} updated successfully"}
 
-@router.delete("/delete_uesr/{user_id}")
+@router.delete("/users/{user_id}")
 def delete_user(user_id: str):
     conn = get_connection()
     cursor = conn.cursor()
@@ -86,5 +96,6 @@ def delete_user(user_id: str):
     DELETE FROM users WHERE user_id = %(id)s""", {'id': user_id})
 
     conn.commit()
+    cursor.close()
     conn.close()
     return {"message": f"{user_id} deleted successfully"}
