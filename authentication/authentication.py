@@ -24,3 +24,31 @@ def create_user(user: User):
     (username, password, email, first_name, last_name)
     VALUES (%s, %s, %s, %s, %s)""",
                    (user.username, user.password, user.email, user.first_name, user.last_name))
+
+    conn.commit()
+    conn.close()
+    return {f"message": f"{user.username} created successfully"}
+
+@router.get("/users")
+def get_users():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT username, password, email, first_name, last_name FROM users""")
+
+    users = cursor.fetchall()
+    conn.close()
+    return users
+
+@router.get("/users/{user_id}")
+def get_user(user_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT username, password, email, first_name, last_name FROM users WHERE id = %s""", user_id)
+    user = cursor.fetchone()
+
+    conn.close()
+    return user
