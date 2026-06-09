@@ -52,3 +52,18 @@ def get_user(user_id: int):
 
     conn.close()
     return user
+
+@router.put("/update_user/{user_id}")
+def update_user(user_id: int, user: User):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    UPDATE users WHERE user_id = %s""", user_id)
+
+    cursor.commit()
+    conn.close()
+
+    return {f"message": f"{user.username} updated successfully"}
+
+@router.delete("/delete_uesr/{user_id}"):

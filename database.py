@@ -6,7 +6,7 @@ load_dotenv()
 
 def get_connection():
     conn = psycopg.connect(
-        database="chipin-db",
+        dbname="chipin-db",
         user="postgres",
         password=os.getenv("DATABASE_PASSWORD"),
         host=os.getenv("DATABASE_HOST"),
