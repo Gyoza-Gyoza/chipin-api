@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from pydantic import BaseModel
 from database import get_connection
 
@@ -14,77 +14,70 @@ class User(BaseModel):
     first_name: str
     last_name: str
 
-@router.post("/create_user")
+@router.post(
+    "/users",
+        status_code=status.HTTP_201_CREATED
+)
 def create_user(user: User):
-    conn = get_connection()
-    cursor = conn.cursor()
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+            INSERT INTO users
+            (username, password, email, first_name, last_name)
+            VALUES (%s, %s, %s, %s, %s)""",
+                           (user.username, user.password, user.email, user.first_name, user.last_name))
 
-    cursor.execute("""
-    INSERT INTO users
-    (username, password, email, first_name, last_name)
-    VALUES (%s, %s, %s, %s, %s)""",
-                   (user.username, user.password, user.email, user.first_name, user.last_name))
+            return {f"message": f"{user.username} created successfully"}
 
-    conn.commit()
-    conn.close()
-    return {f"message": f"{user.username} created successfully"}
-
-@router.get("/users")
+@router.get(
+    "/users",
+    status_code=status.HTTP_200_OK
+)
 def get_users():
-    conn = get_connection()
-    cursor = conn.cursor()
+    with get_connection() as conn:
+        with conn.cursor as cursor:
+            cursor.execute("""
+            SELECT username, password, email, first_name, last_name FROM users""")
 
-    cursor.execute("""
-    SELECT username, password, email, first_name, last_name FROM users""")
-
-    users = cursor.fetchall()
-    conn.close()
-    return users
+            users = cursor.fetchall()
+            return users
 
 @router.get("/users/{user_id}")
 def get_user(user_id: str):
-    conn = get_connection()
-    cursor = conn.cursor()
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+            SELECT username, password, email, first_name, last_name FROM users WHERE user_id = %(id)s""", {'id': user_id})
+            user = cursor.fetchone()
 
-    cursor.execute("""
-    SELECT username, password, email, first_name, last_name FROM users WHERE user_id = %(id)s""", {'id': user_id})
-    user = cursor.fetchone()
+            return user
 
-    conn.close()
-    return user
-
-@router.put("/update_user/{user_id}")
+@router.put("/user/{user_id}")
 def update_user(user_id: str, user: User):
-    conn = get_connection()
-    cursor = conn.cursor()
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+            UPDATE users set username= %(username)s, 
+            password= %(password)s, 
+            email= %(email)s, 
+            first_name= %(first_name)s, 
+            last_name= %(last_name)s
+            WHERE user_id = %(id)s""",
+                           {'id': user_id,
+                            'first_name': user.first_name,
+                            'last_name': user.last_name,
+                            'email': user.email,
+                            'username': user.username,
+                            'password': user.password})
 
-    cursor.execute("""
-    UPDATE users set username= %(username)s, 
-    password= %(password)s, 
-    email= %(email)s, 
-    first_name= %(first_name)s, 
-    last_name= %(last_name)s
-    WHERE user_id = %(id)s""",
-                   {'id': user_id,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'email': user.email,
-                    'username': user.username,
-                    'password': user.password})
+            return {f"message": f"{user.username} updated successfully"}
 
-    conn.commit()
-    conn.close()
-
-    return {f"message": f"{user.username} updated successfully"}
-
-@router.delete("/delete_uesr/{user_id}")
+@router.delete("/user/{user_id}")
 def delete_user(user_id: str):
-    conn = get_connection()
-    cursor = conn.cursor()
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+            DELETE FROM users WHERE user_id = %(id)s""", {'id': user_id})
 
-    cursor.execute("""
-    DELETE FROM users WHERE user_id = %(id)s""", {'id': user_id})
-
-    conn.commit()
-    conn.close()
-    return {"message": f"{user_id} deleted successfully"}
+            conn.commit()
+            return {"message": f"{user_id} deleted successfully"}
