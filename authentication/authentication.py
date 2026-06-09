@@ -42,12 +42,12 @@ def get_users():
     return users
 
 @router.get("/users/{user_id}")
-def get_user(user_id: int):
+def get_user(user_id: str):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT username, password, email, first_name, last_name FROM users WHERE id = %s""", user_id)
+    SELECT username, password, email, first_name, last_name FROM users WHERE user_id = %(id)s""", {'id': user_id})
     user = cursor.fetchone()
 
     conn.close()
