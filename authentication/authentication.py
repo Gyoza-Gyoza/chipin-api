@@ -1,4 +1,4 @@
-from fastapi import APIRouter,status
+from fastapi import APIRouter,status,HTTPException
 from pydantic import BaseModel
 from database import get_connection
 
@@ -45,11 +45,18 @@ def get_users():
     SELECT username, password, email, first_name, last_name FROM users""")
 
     users = cursor.fetchall()
+    if users is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="No users found")
+
     cursor.close()
     conn.close()
     return users
 
-@router.get("/users/{user_id}")
+@router.get(
+    "/users/{user_id}",
+status_code = status.HTTP_200_OK
+)
 def get_user(user_id: str):
     conn = get_connection()
     cursor = conn.cursor()
@@ -58,11 +65,17 @@ def get_user(user_id: str):
     SELECT username, password, email, first_name, last_name FROM users WHERE user_id = %(id)s""", {'id': user_id})
 
     user = cursor.fetchone()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="No user found")
     cursor.close()
     conn.close()
     return user
 
-@router.put("/users/{user_id}")
+@router.put(
+    "/users/{user_id}",
+status_code = status.HTTP_200_OK
+)
 def update_user(user_id: str, user: User):
     conn = get_connection()
     cursor = conn.cursor()
@@ -87,7 +100,10 @@ def update_user(user_id: str, user: User):
 
     return {f"message": f"{user.username} updated successfully"}
 
-@router.delete("/users/{user_id}")
+@router.delete(
+    "/users/{user_id}",
+    status_code = status.HTTP_204_NO_CONTENT
+)
 def delete_user(user_id: str):
     conn = get_connection()
     cursor = conn.cursor()
