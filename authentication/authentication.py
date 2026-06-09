@@ -66,4 +66,14 @@ def update_user(user_id: int, user: User):
 
     return {f"message": f"{user.username} updated successfully"}
 
-@router.delete("/delete_uesr/{user_id}"):
+@router.delete("/delete_uesr/{user_id}")
+def delete_user(user_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    DELETE FROM users WHERE user_id = %s""", user_id)
+
+    cursor.commit()
+    conn.close()
+    return {"message": f"{user_id} deleted successfully"}
