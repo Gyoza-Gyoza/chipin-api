@@ -1,11 +1,14 @@
 from fastapi import APIRouter,status,HTTPException
 from pydantic import BaseModel
 from database import get_connection
+from argon2 import PasswordHasher
 
 router = APIRouter(
-    prefix="/authentication",
-    tags=["Authentication"]
+    prefix = "/users",
+    tags = ["Users"]
 )
+
+passwordHasher = PasswordHasher()
 
 class User(BaseModel):
     username: str
@@ -15,18 +18,20 @@ class User(BaseModel):
     last_name: str
 
 @router.post(
-    "/users",
+    "/",
 status_code = status.HTTP_201_CREATED
 )
 def create_user(user: User):
     conn = get_connection()
     cursor = conn.cursor()
 
+    hashedPassword = passwordHasher.hash(user.password)
+
     cursor.execute("""
     INSERT INTO users
     (username, password, email, first_name, last_name)
     VALUES (%s, %s, %s, %s, %s)""",
-                   (user.username, user.password, user.email, user.first_name, user.last_name))
+                   (user.username, hashedPassword, user.email, user.first_name, user.last_name))
 
     conn.commit()
     cursor.close()
@@ -34,7 +39,7 @@ def create_user(user: User):
     return {f"message": f"{user.username} created successfully"}
 
 @router.get(
-    "/users",
+    "/",
     status_code = status.HTTP_200_OK
 )
 def get_users():
@@ -54,7 +59,7 @@ def get_users():
     return users
 
 @router.get(
-    "/users/{user_id}",
+    "/{user_id}",
 status_code = status.HTTP_200_OK
 )
 def get_user(user_id: str):
@@ -73,7 +78,7 @@ def get_user(user_id: str):
     return user
 
 @router.put(
-    "/users/{user_id}",
+    "/{user_id}",
 status_code = status.HTTP_200_OK
 )
 def update_user(user_id: str, user: User):
@@ -101,7 +106,7 @@ def update_user(user_id: str, user: User):
     return {f"message": f"{user.username} updated successfully"}
 
 @router.delete(
-    "/users/{user_id}",
+    "/{user_id}",
     status_code = status.HTTP_204_NO_CONTENT
 )
 def delete_user(user_id: str):
