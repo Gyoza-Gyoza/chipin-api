@@ -1,6 +1,5 @@
-﻿from fastapi import APIRouter, HTTPException
+﻿from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
-from starlette import status
 
 from database import get_connection
 from argon2 import PasswordHasher

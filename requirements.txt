@@ -1,6 +1,6 @@
 fastapi
 pydantic
-psycopg
+psycopg[binary]
 uvicorn
 dotenv
 argon2-cffi
