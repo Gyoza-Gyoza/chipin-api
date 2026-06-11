@@ -3,13 +3,6 @@ from pydantic import BaseModel
 from database import get_connection
 from argon2 import PasswordHasher
 
-router = APIRouter(
-    prefix = "/users",
-    tags = ["Users"]
-)
-
-passwordHasher = PasswordHasher()
-
 class User(BaseModel):
     username: str
     password: str
@@ -17,6 +10,12 @@ class User(BaseModel):
     first_name: str
     last_name: str
 
+router = APIRouter(
+    prefix = "/users",
+    tags = ["Users"]
+)
+
+passwordHasher = PasswordHasher()
 @router.post(
     "/",
 status_code = status.HTTP_201_CREATED
@@ -25,18 +24,24 @@ def create_user(user: User):
     conn = get_connection()
     cursor = conn.cursor()
 
-    hashedPassword = passwordHasher.hash(user.password)
+    cursor.execute("""SELECT username FROM users WHERE username = %s""", (user.username,))
+    existingUser = cursor.fetchone()
 
-    cursor.execute("""
-    INSERT INTO users
-    (username, password, email, first_name, last_name)
-    VALUES (%s, %s, %s, %s, %s)""",
-                   (user.username, hashedPassword, user.email, user.first_name, user.last_name))
+    if existingUser is None:
+        hashedPassword = passwordHasher.hash(user.password)
 
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {f"message": f"{user.username} created successfully"}
+        cursor.execute("""
+        INSERT INTO users
+        (username, password, email, first_name, last_name)
+        VALUES (%s, %s, %s, %s, %s)""",
+                       (user.username, hashedPassword, user.email, user.first_name, user.last_name))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {f"message": f"{user.username} created successfully"}
+    else:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,)
 
 @router.get(
     "/",
