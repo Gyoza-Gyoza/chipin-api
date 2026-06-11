@@ -2,6 +2,7 @@ from fastapi import APIRouter,status,HTTPException
 from pydantic import BaseModel
 from database import get_connection
 from argon2 import PasswordHasher
+from psycopg.errors import UniqueViolation
 
 class User(BaseModel):
     username: str
@@ -24,10 +25,7 @@ def create_user(user: User):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""SELECT username FROM users WHERE username = %s""", (user.username,))
-    existingUser = cursor.fetchone()
-
-    if existingUser is None:
+    try:
         hashedPassword = passwordHasher.hash(user.password)
 
         cursor.execute("""
@@ -40,7 +38,9 @@ def create_user(user: User):
         cursor.close()
         conn.close()
         return {f"message": f"{user.username} created successfully"}
-    else:
+
+    except UniqueViolation:
+        conn.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,)
 
 @router.get(
