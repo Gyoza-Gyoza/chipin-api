@@ -4,3 +4,4 @@ psycopg[binary]
 uvicorn
 dotenv
 argon2-cffi
+pyjwt
