@@ -10,6 +10,7 @@ class User(BaseModel):
     email: str
     first_name: str
     last_name: str
+    phone_number: int
 
 router = APIRouter(
     prefix = "/users",
@@ -30,9 +31,9 @@ def create_user(user: User):
 
         cursor.execute("""
         INSERT INTO users
-        (username, password, email, first_name, last_name)
-        VALUES (%s, %s, %s, %s, %s)""",
-                       (user.username, hashedPassword, user.email, user.first_name, user.last_name))
+        (username, password, email, first_name, last_name, phone_number)
+        VALUES (%s, %s, %s, %s, %s, %s)""",
+                       (user.username, hashedPassword, user.email, user.first_name, user.last_name, user.phone_number))
 
         conn.commit()
         cursor.close()
@@ -72,7 +73,7 @@ def get_user(user_id: str):
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT username, password, email, first_name, last_name FROM users WHERE user_id = %(id)s""", {'id': user_id})
+    SELECT username, password, email, first_name, last_name, phone_number FROM users WHERE user_id = %(id)s""", {'id': user_id})
 
     user = cursor.fetchone()
     if user is None:
@@ -95,14 +96,16 @@ def update_user(user_id: str, user: User):
     password= %(password)s, 
     email= %(email)s, 
     first_name= %(first_name)s, 
-    last_name= %(last_name)s
+    last_name= %(last_name)s, 
+    phone_number = %(phone_number)s
     WHERE user_id = %(id)s""",
                    {'id': user_id,
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'email': user.email,
                     'username': user.username,
-                    'password': user.password})
+                    'password': user.password,
+                    'phone_number': user.phone_number})
 
     conn.commit()
     cursor.close()
