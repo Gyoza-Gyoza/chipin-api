@@ -22,6 +22,7 @@ def login(request: LoginRequest):
     conn = get_connection()
     cursor = conn.cursor()
 
+    print(request)
     cursor.execute("""
     SELECT password FROM users 
     WHERE username = %s""",
