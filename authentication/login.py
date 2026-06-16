@@ -36,4 +36,7 @@ def login(request: LoginRequest):
     except VerifyMismatchError:
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,
                             detail = "Incorrect credentials")
+    except Exception as e:
+        print(type(e))
+        print(e)
     return {"message": "Login successful"}
