@@ -64,24 +64,54 @@ def get_users():
     conn.close()
     return users
 
+# @router.get(
+#     "id/{user_id}",
+# status_code = status.HTTP_200_OK
+# )
+# def get_user(user_id: str):
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#
+#     cursor.execute("""
+#     SELECT username, password, email, first_name, last_name, phone_number FROM users WHERE user_id = %(id)s""",
+#                    {'id': user_id})
+#
+#     user = cursor.fetchone()
+#     if user is None:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+#                             detail="No user found")
+#     cursor.close()
+#     conn.close()
+#     return user
+
 @router.get(
-    "/{user_id}",
-status_code = status.HTTP_200_OK
+    "/{username}",
+    status_code = status.HTTP_200_OK
 )
-def get_user(user_id: str):
+def get_user(username: str):
     conn = get_connection()
     cursor = conn.cursor()
+    try:
+        cursor.execute("""
+        SELECT user_id, email, first_name, last_name, phone_number FROM users
+        WHERE username = %s""",
+                       (username,))
 
-    cursor.execute("""
-    SELECT username, password, email, first_name, last_name, phone_number FROM users WHERE user_id = %(id)s""", {'id': user_id})
+        user = cursor.fetchone()
 
-    user = cursor.fetchone()
-    if user is None:
+        return user
+
+    except TypeError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="No user found")
-    cursor.close()
-    conn.close()
-    return user
+                            detail="User not found")
+
+    except Exception as e:
+        print(type(e))
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 @router.put(
     "/{user_id}",
