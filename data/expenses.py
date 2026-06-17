@@ -5,9 +5,8 @@ from pydantic import BaseModel
 from database import get_connection
 
 class Expense(BaseModel):
-    user_id: int
+    payer_id: int
     amount: int
-    borrower_id: int
     description: str
 
 class Expenses(BaseModel):
@@ -15,9 +14,10 @@ class Expenses(BaseModel):
 
 class ExpenseData(BaseModel):
     expense_id: int
-    user_id: int
+    receipt_id: int
+    owner_id: int
     amount: int
-    borrower_id: int
+    payer_id: int
     description: str
     created_at: datetime.datetime
 

@@ -31,7 +31,7 @@ def login(request: LoginRequest):
         user = cursor.fetchone()
         passwordHasher.verify(user['password'], request.password)
 
-    except TypeError as e:
+    except TypeError as e: # Returns null if username doesn't exist, this catches it
         print(type(e))
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Incorrect credentials")

@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from authentication import users, login
-from data import expenses
-
+from data import expenses, receipts
 
 app = FastAPI()
 app.add_middleware(
@@ -15,4 +14,4 @@ app.add_middleware(
 
 app.include_router(users.router)
 app.include_router(login.router)
-app.include_router(expenses.router)
+app.include_router(receipts.router)
