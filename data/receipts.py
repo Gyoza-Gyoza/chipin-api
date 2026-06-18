@@ -40,6 +40,10 @@ def create_receipt(receipt: Receipt):
                      (receipt.owner_id, total_cost, receipt.description))
 
         row = cursor.fetchone()
+        # sql query returns the ids in a row
+        # cursor.fetchone gets that row from the query
+        # now that row contains the columns receipt_id and created_at
+        # store these results in the appropriate values 
         receipt_id = row['receipt_id']
         created_at = row['created_at']
 
