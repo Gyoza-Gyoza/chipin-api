@@ -78,7 +78,7 @@ def create_receipt(receipt: Receipt):
         conn.close()
 
 @router.get(
-    "/",
+    "/{user_id}",
 status_code=status.HTTP_200_OK,
 )
 def get_receipts(user_id: int):
