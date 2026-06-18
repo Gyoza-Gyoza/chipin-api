@@ -87,7 +87,7 @@ def get_receipts(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT description, amount, created_at FROM receipts
+        SELECT receipt_id, description, amount, created_at FROM receipts
         WHERE owner_id = %s""",
                        (user_id,))
 
