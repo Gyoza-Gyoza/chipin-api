@@ -1,18 +1,20 @@
 ﻿from fastapi import APIRouter, status
 from pydantic import BaseModel
 from database import get_connection
-import datetime
+import decimal
+from datetime import datetime
 class Receipt(BaseModel):
     owner_id: int
     description: str
+    created_at: datetime = datetime.now()
     items: list[Item]
 class Item(BaseModel):
     payer_id: int
-    amount: int
+    amount: decimal.Decimal
     description: str
 class ReceiptData(BaseModel):
     receipt_id: int
-    created_at: datetime.datetime
+    created_at: datetime
     item_ids: list[int]
 
 router = APIRouter(
@@ -34,16 +36,16 @@ def create_receipt(receipt: Receipt):
             total_cost += item.amount
 
         cursor.execute("""
-        INSERT INTO receipts (owner_id, amount, description)
-        VALUES (%s, %s, %s)
+        INSERT INTO receipts (owner_id, amount, created_at, description)
+        VALUES (%s, %s, %s, %s)
         RETURNING receipt_id, created_at""",
-                     (receipt.owner_id, total_cost, receipt.description))
+                     (receipt.owner_id, total_cost, receipt.created_at, receipt.description))
 
         row = cursor.fetchone()
         # sql query returns the ids in a row
         # cursor.fetchone gets that row from the query
         # now that row contains the columns receipt_id and created_at
-        # store these results in the appropriate values 
+        # store these results in the appropriate values
         receipt_id = row['receipt_id']
         created_at = row['created_at']
 
