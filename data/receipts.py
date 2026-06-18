@@ -12,10 +12,16 @@ class Item(BaseModel):
     payer_id: int
     amount: decimal.Decimal
     description: str
-class ReceiptData(BaseModel):
+class ReceiptIDs(BaseModel):
     receipt_id: int
     created_at: datetime
     item_ids: list[int]
+
+class ReceiptData(BaseModel):
+    description: str
+    amount: decimal.Decimal
+    created_at: datetime
+    items: list[Item]
 
 router = APIRouter(
     prefix="/receipts",
@@ -59,7 +65,7 @@ def create_receipt(receipt: Receipt):
             item_ids.append(cursor.fetchone()['item_id'])
 
         conn.commit()
-        return ReceiptData(receipt_id=receipt_id, created_at=created_at, item_ids=item_ids)
+        return ReceiptIDs(receipt_id=receipt_id, created_at=created_at, item_ids=item_ids)
 
     except Exception as e:
         conn.rollback()
@@ -70,3 +76,61 @@ def create_receipt(receipt: Receipt):
     finally:
         cursor.close()
         conn.close()
+
+@router.get(
+    "/",
+status_code=status.HTTP_200_OK,
+)
+def get_receipts(user_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        SELECT description, amount, created_at FROM receipts
+        WHERE owner_id = %s""",
+                       (user_id,))
+
+        return cursor.fetchall()
+
+    except Exception as e:
+        print(type(e))
+        print(e)
+        raise
+
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.get(
+    "/{receipt_id}",
+status_code=status.HTTP_200_OK
+)
+def get_receipt(receipt_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        SELECT * FROM receipts 
+        LEFT JOIN items on receipts.receipt_id = items.receipt_id
+        WHERE receipts.receipt_id = %s""",
+                       (receipt_id,))
+        row = cursor.fetchall()
+
+        items = []
+        for item in row:
+            items.append(Item(payer_id = item['payer_id'],
+                         amount = item['amount'],
+                         description = item['description']))
+
+        receipt_data = ReceiptData(description = row[0]['description'],
+                                   amount = row[0]['amount'],
+                                   created_at = row[0]['created_at'],
+                                   items = items)
+        return receipt_data
+
+    except Exception as e:
+        print(type(e))
+        print(e)
+        raise
