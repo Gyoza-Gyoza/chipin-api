@@ -77,7 +77,7 @@ def create_receipt(receipt: Receipt):
     "/users/{user_id}",
 status_code=status.HTTP_200_OK,
 )
-def get_receipts(user_id: int):
+def get_receipt_by_user_id(user_id: int):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -102,7 +102,7 @@ def get_receipts(user_id: int):
     "/{receipt_id}",
 status_code=status.HTTP_200_OK
 )
-def get_receipt(receipt_id: int):
+def get_receipt_by_receipt_id(receipt_id: int):
     conn = get_connection()
     cursor = conn.cursor()
 

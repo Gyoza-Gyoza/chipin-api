@@ -49,7 +49,7 @@ def get_item(item_id: int):
 
         if item is None:
             raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
-                            detail = "Item not found")
+                                detail = "Item not found")
     except Exception as e:
         conn.rollback()
         print(type(e))
