@@ -8,6 +8,9 @@ class Receipt(BaseModel):
     description: str
     created_at: datetime = datetime.now()
     items: list[Item]
+class ReceiptUpdate(BaseModel):
+    description: str
+    items: list[Item]
 class Item(BaseModel):
     payer_id: int
     amount: decimal.Decimal
@@ -65,7 +68,9 @@ def create_receipt(receipt: Receipt):
             item_ids.append(cursor.fetchone()['item_id'])
 
         conn.commit()
-        return ReceiptIDs(receipt_id=receipt_id, created_at=created_at, item_ids=item_ids)
+        return ReceiptIDs(receipt_id=receipt_id,
+                          created_at=created_at,
+                          item_ids=item_ids)
 
     except Exception as e:
         conn.rollback()
@@ -121,8 +126,8 @@ def get_receipt(receipt_id: int):
         items = []
         for item in row:
             items.append(Item(payer_id = item['payer_id'],
-                         amount = item['amount'],
-                         description = item['description']))
+                              amount = item['amount'],
+                              description = item['description']))
 
         receipt_data = ReceiptData(description = row[0]['description'],
                                    amount = row[0]['amount'],
@@ -134,3 +139,29 @@ def get_receipt(receipt_id: int):
         print(type(e))
         print(e)
         raise
+
+@router.put(
+    "/{receipt_id}",
+status_code=status.HTTP_200_OK
+)
+def update_receipt(receipt_id: int, new_receipt: ReceiptData):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+                       UPDATE receipts SET description = %s, 
+                       items = %s
+                       WHERE receipt_id = %s""",
+                       (new_receipt.description, new_receipt.items, receipt_id))
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        print(type(e))
+        print(e)
+        raise
+
+    finally:
+        cursor.close()
+        conn.close()
