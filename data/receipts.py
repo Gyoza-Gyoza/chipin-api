@@ -23,6 +23,15 @@ class ReceiptData(BaseModel):
     amount: decimal.Decimal
     date: datetime
     items: list[Item]
+    current_service_tax: decimal.Decimal
+    current_gst: decimal.Decimal
+
+    @property
+    def service_tax_amount(self) -> decimal.Decimal:
+        return self.amount * self.current_service_tax
+
+current_service_tax = 10.0
+current_gst = 9.0
 
 router = APIRouter(
     prefix="/receipts",
@@ -51,7 +60,7 @@ def create_receipt(receipt: Receipt):
         row = cursor.fetchone()
         # sql query returns the ids in a row
         # cursor.fetchone gets that row from the query
-        # now that row contains the columns receipt_id and created_at
+        # now that row contains the columns receipt_id and date
         # store these results in the appropriate values
         receipt_id = row['receipt_id']
         date = row['date']
