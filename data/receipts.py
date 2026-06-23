@@ -1,16 +1,16 @@
 ﻿from fastapi import APIRouter, status
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, computed_field, Field
 from database import get_connection
 import decimal
 from datetime import datetime
 from psycopg import cursor
 from data.items import Item
+
 class Receipt(BaseModel):
     owner_id: int
     description: str
     date: datetime = datetime.now()
     items: list[Item]
-
 class ReceiptUpdate(BaseModel):
     description: str
     items: list[Item]
@@ -18,11 +18,10 @@ class ReceiptIDs(BaseModel):
     receipt_id: int
     date: datetime
     item_ids: list[int]
-
 class ReceiptData(BaseModel):
     description: str
     date: datetime
-    amount: decimal.Decimal
+    amount: decimal.Decimal = Field(10)
     items: list[Item]
     @computed_field
     @property
@@ -93,7 +92,7 @@ def create_receipt(receipt: Receipt):
 @router.get(
     "/users/{user_id}",
     status_code=status.HTTP_200_OK,
-    response_model = int
+    response_model = ReceiptData
 )
 def get_receipt_by_user_id(user_id: int):
     conn = get_connection()

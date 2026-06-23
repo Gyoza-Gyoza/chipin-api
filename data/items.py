@@ -1,11 +1,11 @@
 from fastapi import APIRouter, status, HTTPException
 from database import get_connection
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import decimal
 
 class Item(BaseModel):
-    payer_id: int
-    amount: decimal.Decimal
+    payer_id: list[int]
+    amount: decimal.Decimal = Field(10)
     description: str
 
 router = APIRouter(
@@ -15,7 +15,8 @@ router = APIRouter(
 
 @router.get(
     "/",
-    status_code = status.HTTP_200_OK
+    status_code = status.HTTP_200_OK,
+    response_model = list[Item]
 )
 def get_item():
     conn = get_connection()
@@ -33,7 +34,8 @@ def get_item():
 
 @router.get(
     "/{item_id}",
-    status_code = status.HTTP_200_OK
+    status_code = status.HTTP_200_OK,
+    response_model = Item
 )
 def get_item(item_id: int):
     conn = get_connection()

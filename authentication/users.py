@@ -46,7 +46,8 @@ def create_user(user: User):
 
 @router.get(
     "/",
-    status_code = status.HTTP_200_OK
+    status_code = status.HTTP_200_OK,
+    response_model = list[User]
 )
 def get_users():
     conn = get_connection()
@@ -86,7 +87,8 @@ def get_users():
 
 @router.get(
     "/{username}",
-    status_code = status.HTTP_200_OK
+    status_code = status.HTTP_200_OK,
+    response_model = User
 )
 def get_user(username: str):
     conn = get_connection()
