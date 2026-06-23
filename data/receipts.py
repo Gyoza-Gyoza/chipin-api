@@ -1,5 +1,5 @@
 ﻿from fastapi import APIRouter, status
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from database import get_connection
 import decimal
 from datetime import datetime
@@ -10,6 +10,7 @@ class Receipt(BaseModel):
     description: str
     date: datetime = datetime.now()
     items: list[Item]
+
 class ReceiptUpdate(BaseModel):
     description: str
     items: list[Item]
@@ -20,18 +21,24 @@ class ReceiptIDs(BaseModel):
 
 class ReceiptData(BaseModel):
     description: str
-    amount: decimal.Decimal
     date: datetime
+    amount: decimal.Decimal
     items: list[Item]
-    current_service_tax: decimal.Decimal
-    current_gst: decimal.Decimal
-
+    @computed_field
     @property
     def service_tax_amount(self) -> decimal.Decimal:
-        return self.amount * self.current_service_tax
+        return self.amount + self.amount * current_service_tax
+    @computed_field
+    @property
+    def gst_amount(self) -> decimal.Decimal:
+        return self.amount + self.amount * current_gst
+    @computed_field
+    @property
+    def both_amount(self) -> decimal.Decimal:
+        return self.amount + self.amount * (current_service_tax + current_gst)
 
-current_service_tax = 10.0
-current_gst = 9.0
+current_service_tax = decimal.Decimal('0.1')
+current_gst = decimal.Decimal('0.09')
 
 router = APIRouter(
     prefix="/receipts",
@@ -40,7 +47,8 @@ router = APIRouter(
 
 @router.post(
     "/",
-status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    response_model = Receipt
 )
 def create_receipt(receipt: Receipt):
     conn = get_connection()
@@ -84,7 +92,8 @@ def create_receipt(receipt: Receipt):
 
 @router.get(
     "/users/{user_id}",
-status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_200_OK,
+    response_model = int
 )
 def get_receipt_by_user_id(user_id: int):
     conn = get_connection()
@@ -109,7 +118,8 @@ def get_receipt_by_user_id(user_id: int):
 
 @router.get(
     "/{receipt_id}",
-status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    response_model = ReceiptData,
 )
 def get_receipt_by_receipt_id(receipt_id: int):
     conn = get_connection()
@@ -131,7 +141,7 @@ def get_receipt_by_receipt_id(receipt_id: int):
 
         receipt_data = ReceiptData(description = row[0]['description'],
                                    amount = row[0]['amount'],
-                                   date= row[0]['date'],
+                                   date = row[0]['date'],
                                    items = items)
         return receipt_data
 
@@ -142,7 +152,7 @@ def get_receipt_by_receipt_id(receipt_id: int):
 
 @router.put(
     "/{receipt_id}",
-status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK
 )
 def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
     conn = get_connection()
