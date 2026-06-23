@@ -2,11 +2,10 @@ from fastapi import APIRouter, status, HTTPException
 from database import get_connection
 from pydantic import BaseModel, Field
 import decimal
-
+from psycopg import cursor
 class Item(BaseModel):
-    payer_id: list[int]
     amount: decimal.Decimal = Field(10)
-    description: str
+    title: str
 
 router = APIRouter(
     prefix = "/items",
@@ -32,6 +31,7 @@ def get_item():
 
     return items
 
+# Change to adding sharers instead of items
 @router.get(
     "/{item_id}",
     status_code = status.HTTP_200_OK,
@@ -64,6 +64,7 @@ def get_item(item_id: int):
 
     return item
 
+# Add function for editing sharers and one for editing items
 @router.put(
     "/{item_id}",
     status_code = status.HTTP_200_OK
@@ -113,3 +114,15 @@ def delete_item(item_id: int):
     finally:
         cursor.close()
         conn.close()
+
+def initialize_items(cursor: cursor, receipt_id: int, items: list[Item]):
+    item_ids = []
+    for item in items:
+        cursor.execute("""
+                INSERT INTO items (receipt_id, amount, title)
+                VALUES (%s, %s, %s)
+                RETURNING item_id""",
+                       (receipt_id, item.amount, item.title))
+        item_ids.append(cursor.fetchone()['item_id'])
+
+    return item_ids

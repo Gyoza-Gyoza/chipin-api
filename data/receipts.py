@@ -3,23 +3,22 @@ from pydantic import BaseModel, computed_field, Field
 from database import get_connection
 import decimal
 from datetime import datetime
-from psycopg import cursor
-from data.items import Item
+from data.items import Item, initialize_items
 
 class Receipt(BaseModel):
     owner_id: int
-    description: str
+    title: str
     date: datetime = datetime.now()
     items: list[Item]
 class ReceiptUpdate(BaseModel):
-    description: str
+    title: str
     items: list[Item]
 class ReceiptIDs(BaseModel):
     receipt_id: int
     date: datetime
     item_ids: list[int]
 class ReceiptData(BaseModel):
-    description: str
+    title: str
     date: datetime
     amount: decimal.Decimal = Field(10)
     items: list[Item]
@@ -40,14 +39,14 @@ current_service_tax = decimal.Decimal('0.1')
 current_gst = decimal.Decimal('0.09')
 
 router = APIRouter(
-    prefix="/receipts",
-    tags=["Receipts"]
+    prefix = "/receipts",
+    tags = ["Receipts"]
 )
 
 @router.post(
     "/",
-    status_code=status.HTTP_201_CREATED,
-    response_model = Receipt
+    status_code = status.HTTP_201_CREATED,
+    response_model = ReceiptIDs
 )
 def create_receipt(receipt: Receipt):
     conn = get_connection()
@@ -59,10 +58,10 @@ def create_receipt(receipt: Receipt):
             total_cost += item.amount
 
         cursor.execute("""
-        INSERT INTO receipts (owner_id, amount, created_at, description)
+        INSERT INTO receipts (owner_id, amount, date, title)
         VALUES (%s, %s, %s, %s)
-        RETURNING receipt_id, created_at""",
-                       (receipt.owner_id, total_cost, receipt.date, receipt.description))
+        RETURNING receipt_id, date""",
+                       (receipt.owner_id, total_cost, receipt.date, receipt.title))
 
         row = cursor.fetchone()
         # sql query returns the ids in a row
@@ -72,12 +71,12 @@ def create_receipt(receipt: Receipt):
         receipt_id = row['receipt_id']
         date = row['date']
 
-        item_ids = add_items(cursor, receipt_id, receipt.items)
+        item_ids = initialize_items(cursor, receipt_id, receipt.items)
 
         conn.commit()
-        return ReceiptIDs(receipt_id=receipt_id,
-                          date=date,
-                          item_ids=item_ids)
+        return ReceiptIDs(receipt_id = receipt_id,
+                          date = date,
+                          item_ids = item_ids)
 
     except Exception as e:
         conn.rollback()
@@ -91,8 +90,8 @@ def create_receipt(receipt: Receipt):
 
 @router.get(
     "/users/{user_id}",
-    status_code=status.HTTP_200_OK,
-    response_model = ReceiptData
+    status_code = status.HTTP_200_OK,
+    response_model = list[ReceiptData]
 )
 def get_receipt_by_user_id(user_id: int):
     conn = get_connection()
@@ -100,9 +99,17 @@ def get_receipt_by_user_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipt_id, description, amount, created_at FROM receipts
+        SELECT receipt_id, title, amount, date FROM receipts
         WHERE owner_id = %s""",
                        (user_id,))
+
+        receipts = cursor.fetchall()
+
+        for receipt in receipts:
+            cursor.execute("""
+            SELECT * FROM items 
+            WHERE receipt_id = %s""",
+                           receipt.receipt_id)
 
         return cursor.fetchall()
 
@@ -134,11 +141,11 @@ def get_receipt_by_receipt_id(receipt_id: int):
 
         items = []
         for item in row:
-            items.append(Item(payer_id = item['payer_id'],
+            items.append(Item(payer_ids= item['payer_id'],
                               amount = item['amount'],
-                              description = item['description']))
+                              title = item['title']))
 
-        receipt_data = ReceiptData(description = row[0]['description'],
+        receipt_data = ReceiptData(title = row[0]['title'],
                                    amount = row[0]['amount'],
                                    date = row[0]['date'],
                                    items = items)
@@ -151,7 +158,7 @@ def get_receipt_by_receipt_id(receipt_id: int):
 
 @router.put(
     "/{receipt_id}",
-    status_code=status.HTTP_200_OK
+    status_code = status.HTTP_200_OK
 )
 def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
     conn = get_connection()
@@ -159,16 +166,16 @@ def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
 
     try:
         cursor.execute("""
-        UPDATE receipts SET description = %s 
+        UPDATE receipts SET title = %s 
         WHERE receipt_id = %s""",
-                       (new_receipt.description, receipt_id))
+                       (new_receipt.title, receipt_id))
 
         cursor.execute("""
         DELETE FROM items
         WHERE receipt_id = %s""",
                        (receipt_id,))
 
-        add_items(cursor, receipt_id, new_receipt.items)
+        initialize_items(cursor, receipt_id, new_receipt.items)
 
         conn.commit()
 
@@ -207,15 +214,3 @@ def delete_receipt(receipt_id: int):
     finally:
         cursor.close()
         conn.close()
-
-def add_items(cursor: cursor, receipt_id: int, items: list[Item]):
-    item_ids = []
-    for item in items:
-        cursor.execute("""
-                INSERT INTO items (receipt_id, payer_id, amount, description)
-                VALUES (%s, %s, %s, %s)
-                RETURNING item_id""",
-                       (receipt_id, item.payer_id, item.amount, item.description))
-        item_ids.append(cursor.fetchone()['item_id'])
-
-    return item_ids
