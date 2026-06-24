@@ -11,6 +11,34 @@ router = APIRouter(
     prefix = "/items",
     tags = ["Items"]
 )
+# Maybe do this for multiple? Like add all items that the user wants to pay for and then
+# post them all in one function and return the calculation
+@router.post(
+    "/paid_by/{user_id}",
+    status_code = status.HTTP_201_CREATED
+)
+def add_sharers(item_id: int, user_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        INSERT INTO item_payers (item_id, user_id) 
+        VALUES (%s, %s)""",
+                       item_id, user_id)
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        print(type(e))
+        print(e)
+        raise
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return {"message": "Sharer added"}
 
 @router.get(
     "/",
