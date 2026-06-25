@@ -141,9 +141,9 @@ def get_receipt_by_receipt_id(receipt_id: int):
 
         items = []
         for item in row:
-            items.append(Item(payer_ids= item['payer_id'],
-                              amount = item['amount'],
-                              title = item['title']))
+            items.append(Item(amount = item['amount'],
+                              title = item['title'],
+                              item_count= item['count']))
 
         receipt_data = ReceiptData(title = row[0]['title'],
                                    amount = row[0]['amount'],
