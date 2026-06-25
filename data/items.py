@@ -22,16 +22,23 @@ router = APIRouter(
     "/paid_by/{user_id}",
     status_code = status.HTTP_200_OK
 )
-def update_sharers(user_id: int, item_ids: list[int]):
+def update_sharers(user_id: int, item_ids: list[int], state: bool):
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
         for item_id in item_ids:
-            cursor.execute("""
-            INSERT INTO item_payers (item_id, user_id) 
-            VALUES (%s, %s)""",
-                           (item_id, user_id))
+            if state:
+                cursor.execute("""
+                INSERT INTO item_payers (item_id, user_id) 
+                VALUES (%s, %s)""",
+                               (item_id, user_id))
+            else:
+                cursor.execute("""
+                DELETE FROM item_payers
+                WHERE item_id = %s AND user_id = %s""",
+                               (item_id, user_id))
+
         conn.commit()
 
     except Exception as e:
@@ -44,7 +51,10 @@ def update_sharers(user_id: int, item_ids: list[int]):
         cursor.close()
         conn.close()
 
-    return {"message": "Sharer added"}
+    if state:
+        return {"message": "Sharer added"}
+    else:
+        return {"message": "Sharer removed"}
 
 @router.get(
     "/{item_id}",
