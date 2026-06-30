@@ -54,16 +54,23 @@ def get_users():
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT username, password, email, first_name, last_name FROM users""")
+    SELECT username, password, email, first_name, last_name, phone_number FROM users""")
 
     users = cursor.fetchall()
     if users is None:
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
                             detail = "No users found")
-
+    user_list = []
+    for user in users:
+        user_list.append(User(username=user['username'],
+                              password=user['password'],
+                              email=user['email'],
+                              first_name=user['first_name'],
+                              last_name=user['last_name'],
+                              phone_number=user['phone_number']))
     cursor.close()
     conn.close()
-    return users
+    return user_list
 
 @router.get(
     "/{username}",
