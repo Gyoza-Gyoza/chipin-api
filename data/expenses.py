@@ -2,7 +2,7 @@ import datetime
 from fastapi import APIRouter, HTTPException, status
 from psycopg import cursor
 from pydantic import BaseModel
-from database import get_connection
+from data.database import get_connection
 
 class Expense(BaseModel):
     payer_id: int

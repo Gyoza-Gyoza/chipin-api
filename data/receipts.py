@@ -1,6 +1,6 @@
 ﻿from fastapi import APIRouter, status
 from pydantic import BaseModel, computed_field, Field
-from database import get_connection
+from data.database import get_connection
 import decimal
 from datetime import datetime
 from psycopg import cursor
