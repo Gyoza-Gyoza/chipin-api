@@ -1,0 +1,5 @@
+This project is a backend-focused expense splitting system designed for real-time peer-to-peer payment workflows, including instant PayNow QR code generation for fast settlement between users.
+
+The system handles receipt creation, expense distribution, and transaction tracking, with a focus on correctness, data consistency, and ease of settlement between multiple users. It is designed to simulate real-world payment flows where multiple participants share and settle costs in a single transaction.
+
+Key technical highlights include structured database design for managing receipts and transactions, and a payment flow designed to support fast, user-to-user transfers through QR-based interactions.
