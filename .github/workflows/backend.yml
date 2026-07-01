@@ -38,4 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run build
-        run: curl https://deploy.gyozas.dev/deploy
+        run: |
+          curl \
+            -X POST \ 
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN}}" \
+            https://deploy.gyozas.dev/deploy
