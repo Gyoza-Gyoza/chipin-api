@@ -40,6 +40,6 @@ jobs:
       - name: Run build
         run: |
           curl -v \
-            -X POST \ 
+            -X POST \
             -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
             https://deploy.gyozas.dev/deploy
