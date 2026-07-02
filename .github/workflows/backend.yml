@@ -45,16 +45,30 @@ jobs:
             https://deploy.gyozas.dev/deploy
 
   notify:
-    needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Send notification
+        if: always()
         run: |
+          if [ "${{ job.status }}" = "success" ]; then STATUS="SUCCESS"
+          else [ "${{ job.status }}" = "failure" ]; then STATUS="FAILURE"
+          fi
+          
+          MESSAGE="
+          Deployment Pipeline $STATUS
+          
+          Repository: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.event.head_commit_message }}
+          Run: #${{ github.run_number }}
+          
+          https://github.com${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
           curl -v \
           -X POST \
           https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -H "Content-Type: application/json" \
           -d '{
             "chat_id":"${{ secrets.TELEGRAM_CHAT_ID }}",
-            "text":"Deployment success!"
+            "text":\"$MESSAGE\"
           }'
