@@ -45,30 +45,45 @@ jobs:
             https://deploy.gyozas.dev/deploy
 
   notify:
+    needs:
+      - build
+      - deploy
     runs-on: ubuntu-latest
     steps:
       - name: Send notification
         if: always()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then STATUS="SUCCESS"
-          else [ "${{ job.status }}" = "failure" ]; then STATUS="FAILURE"
+          JOB_STATUS=""
+          
+          JOB_STATUS+="Build: "
+          if [ "${{ needs.build.result }}" = "success" ]; then JOB_STATUS+="SUCCESS"
+          else JOB_STATUS+="FAILED"
           fi
+          JOB_STATUS+=$'\n'
+          
+          JOB_STATUS+="Deploy: "
+          if [ "${{ needs.deploy.result }}" = "success" ]; then JOB_STATUS+="SUCCESS"
+          else JOB_STATUS+="FAILED"
+          fi
+          JOB_STATUS+=$'\n' 
           
           MESSAGE="
           Deployment Pipeline $STATUS
           
           Repository: ${{ github.repository }}
           Branch: ${{ github.ref_name }}
-          Commit: ${{ github.event.head_commit_message }}
+          Commit: ${{ github.event.head_commit.message }}
           Run: #${{ github.run_number }}
           
-          https://github.com${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          $JOB_STATUS
+          
+          https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
           curl -v \
           -X POST \
           https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -H "Content-Type: application/json" \
-          -d '{
+          -d "{
             "chat_id":"${{ secrets.TELEGRAM_CHAT_ID }}",
             "text":\"$MESSAGE\"
-          }'
+          }"
