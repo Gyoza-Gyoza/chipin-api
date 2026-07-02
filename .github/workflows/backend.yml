@@ -55,16 +55,35 @@ jobs:
         run: |
           JOB_STATUS=""
           
-          JOB_STATUS+="Build: "
-          if [ "${{ needs.build.result }}" = "success" ]; then JOB_STATUS+="SUCCESS"
-          else JOB_STATUS+="FAILED"
-          fi
-          JOB_STATUS+=$'\n'
+          append_status(){
+            local name = $1
+            local status = $2
           
-          JOB_STATUS+="Deploy: "
-          if [ "${{ needs.deploy.result }}" = "success" ]; then JOB_STATUS+="SUCCESS"
-          else JOB_STATUS+="FAILED"
-          fi
+            JOB_STATUS+="$name: "
+            
+            case "$status" in 
+              success)
+                JOB_STATUS+="SUCCESS"
+                ;;
+              failure)
+                JOB_STATUS+="FAILURE"
+                ;;
+              skipped)
+                JOB_STATUS+="SKIPPED"
+                ;;
+              cancelled)
+                JOB_STATUS+="CANCELLED"
+                ;;
+              *)
+                JOB_STATUS+="UNKNOWN"
+                ;;
+          esac
+          
+          JOB_STATUS+=$'\n'
+          }
+          
+          append_status "Build" "${{ needs.build.result }}"
+          append_status "Deploy" "${{ needs.deploy.result }}"
           
           MESSAGE="
           Deployment Pipeline $STATUS
@@ -75,7 +94,6 @@ jobs:
           Run: #${{ github.run_number }}
           
           $JOB_STATUS
-          
           https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
           curl -v \
