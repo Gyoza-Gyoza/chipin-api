@@ -65,7 +65,6 @@ jobs:
           if [ "${{ needs.deploy.result }}" = "success" ]; then JOB_STATUS+="SUCCESS"
           else JOB_STATUS+="FAILED"
           fi
-          JOB_STATUS+=$'\n' 
           
           MESSAGE="
           Deployment Pipeline $STATUS
