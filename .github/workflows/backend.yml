@@ -56,8 +56,8 @@ jobs:
           JOB_STATUS=""
           
           append_status(){
-            local name = $1
-            local status = $2
+            local name="$1"
+            local status="$2"
           
             JOB_STATUS+="$name: "
             
