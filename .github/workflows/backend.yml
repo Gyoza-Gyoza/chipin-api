@@ -43,3 +43,18 @@ jobs:
             -X POST \
             -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
             https://deploy.gyozas.dev/deploy
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification
+        run: |
+          curl -v \
+          -X POST \
+          https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -H "Content-Type: application/json" \
+          -d '{
+            "chat_id":"${{ secrets.TELEGRAM_CHAT_ID }}",
+            "text":"Deployment success!"
+          }'
