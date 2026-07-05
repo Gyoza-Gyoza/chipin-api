@@ -32,13 +32,14 @@ def create_user(user: User):
         cursor.execute("""
         INSERT INTO users
         (username, password, email, first_name, last_name, phone_number)
-        VALUES (%s, %s, %s, %s, %s, %s)""",
+        VALUES (%s, %s, %s, %s, %s, %s)
+        RETURNING user_id""",
                        (user.username, hashedPassword, user.email, user.first_name, user.last_name, user.phone_number))
-
+        user_id = cursor.fetchone()
         conn.commit()
         cursor.close()
         conn.close()
-        return {f"message": f"{user.username} created successfully"}
+        return user_id
 
     except UniqueViolation:
         conn.rollback()
