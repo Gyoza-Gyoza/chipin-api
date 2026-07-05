@@ -1,0 +1,60 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+  
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checks directory
+        run: |
+          pwd
+          ls
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify application imports
+        run: python -c "import main"
+
+      - name: Build Docker image
+        run: docker build -t chipin-api .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run build
+        run: |
+          curl -v \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
+            https://deploy.gyozas.dev/deploy
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification
+        run: |
+          curl -v \
+          -X POST \
+          https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -H "Content-Type: application/json" \
+          -d '{
+            "chat_id":"${{ secrets.TELEGRAM_CHAT_ID }}",
+            "text":"Deployment success!"
+          }'
