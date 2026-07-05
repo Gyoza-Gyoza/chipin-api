@@ -215,11 +215,6 @@ def delete_receipt(receipt_id: int):
 
     try:
         cursor.execute("""
-        DELETE FROM items 
-        WHERE receipt_id = %s""",
-                       (receipt_id,))
-        cursor.commit()
-        cursor.execute("""
         DELETE FROM receipts 
         WHERE receipt_id = %s""",
                        (receipt_id,))

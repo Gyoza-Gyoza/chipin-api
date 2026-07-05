@@ -44,6 +44,13 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
             https://deploy.gyozas.dev/deploy
 
+      - name: Run tests
+        run: |
+          curl -v \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
+            https://deploy.gyozas.dev/test
+
   notify:
     needs:
       - build
