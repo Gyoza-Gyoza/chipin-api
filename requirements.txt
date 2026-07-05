@@ -5,3 +5,5 @@ uvicorn
 dotenv
 argon2-cffi
 pyjwt
+pytest
+httpx2
