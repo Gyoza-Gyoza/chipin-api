@@ -134,11 +134,11 @@ jobs:
           Commit: ${{ github.event.head_commit.message }}
           Run: #${{ github.run_number }}
           
-          Tests run: $TEST_COUNT
-          Successes: $TEST_SUCCESSES
-          Errors: $TEST_ERRORS
-          Failures: $TEST_FAILURES
-          Skipped: $TEST_SKIPPED
+          Tests run: ${{ needs.build.outputs.test_count }}
+          Successes: ${{ needs.build.outputs.test_successes }}
+          Errors: ${{ needs.build.outputs.test_errors }}
+          Failures: ${{ needs.build.outputs.test_failures }}
+          Skipped: ${{ needs.build.outputs.test_skipped }}
           
           Failed tests: 
           $FAILED_TESTS
