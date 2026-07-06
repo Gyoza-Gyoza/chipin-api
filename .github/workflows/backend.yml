@@ -56,9 +56,10 @@ jobs:
             --host="${{ secrets.DATABASE_HOST }}" \
             --port="${{ secrets.DATABASE_PORT }}" \
             --username="postgres" \
-            --password="${{ secrets.DATABASE_PASSWORD }}" \
             --dbname="${{ secrets.DATABASE_NAME }}" \
             --file=database/schema.sql
+        env:
+          PGPASSWORD: ${{ secrets.DATABASE_PASSWORD }}
 
       - name: Run tests
         run: python -m pytest tests --junitxml=test_results/test_results.xml
