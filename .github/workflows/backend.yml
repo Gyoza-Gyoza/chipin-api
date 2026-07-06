@@ -72,7 +72,7 @@ jobs:
         run: python -m pytest tests --junitxml=test_results/test_results.xml
 
       - name: Parse test results
-        run: python tests/parse_test.py
+        run: python test_results/parse_test.py
 
   deploy:
     needs: build
