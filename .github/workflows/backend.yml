@@ -10,14 +10,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_HOST: localhost
+      DATABASE_PORT: 5432
+      DATABASE_NAME: chipin_test
+      DATABASE_PASSWORD: postgres
+
     services:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_HOST: ${{ secrets.DATABASE_HOST }}
-          POSTGRES_DB: ${{ secrets.DATABASE_NAME }}
+          POSTGRES_HOST: $DATABASE_HOST
+          POSTGRES_DB: $DATABASE_NAME
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          POSTGRES_PASSWORD: $DATABASE_PASSWORD
 
         ports:
           - 5432:5432
@@ -54,13 +60,13 @@ jobs:
       - name: Create database schema
         run: |
           psql \
-            --host="${{ secrets.DATABASE_HOST }}" \
-            --port="${{ secrets.DATABASE_PORT }}" \
+            --host="$DATABASE_HOST" \
+            --port="$DATABASE_PORT" \
             --username="postgres" \
-            --dbname="${{ secrets.DATABASE_NAME }}" \
+            --dbname="$DATABASE_NAME" \
             --file=database/schema.sql
         env:
-          PGPASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          PGPASSWORD: $DATABASE_PASSWORD
 
       - name: Run tests
         run: python -m pytest tests --junitxml=test_results/test_results.xml
