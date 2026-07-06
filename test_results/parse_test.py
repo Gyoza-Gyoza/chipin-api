@@ -21,10 +21,10 @@ for testcase in testcases:
 print(failed_tests)
 
 with open(os.environ["GITHUB_ENV"], "a") as env:
-    env.write(f"TEST_COUNT={test_count}\n")
-    env.write(f"TEST_SUCCESSES={test_successes}\n")
-    env.write(f"TEST_ERRORS={test_errors}\n")
-    env.write(f"TEST_FAILURES={test_failures}\n")
-    env.write(f"TEST_SKIPPED={test_skipped}\n")
-    env.write(f"FAILED_TESTS={failed_tests}\n")
+    env.write(f"test_count={test_count}\n")
+    env.write(f"test_successes={test_successes}\n")
+    env.write(f"test_errors={test_errors}\n")
+    env.write(f"test_failures={test_failures}\n")
+    env.write(f"test_skipped={test_skipped}\n")
+    env.write(f"failed_tests={failed_tests}\n")
 

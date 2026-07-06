@@ -72,7 +72,16 @@ jobs:
         run: python -m pytest tests --junitxml=test_results.xml
 
       - name: Parse test results
+        id: parse_tests
         run: python test_results/parse_test.py
+
+    outputs:
+      test_count: ${{ steps.parse_tests.outputs.test_count }}
+      test_successes: ${{ steps.parse_tests.outputs.test_successes }}
+      test_errors: ${{ steps.parse_tests.outputs.test_errors }}
+      test_failures: ${{ steps.parse_tests.outputs.test_failures }}
+      test_skipped: ${{ steps.parse_tests.outputs.test_skipped }}
+      failed_tests: ${{ steps.parse_tests.outputs.failed_tests }}
 
   deploy:
     needs: build
