@@ -56,6 +56,7 @@ jobs:
             --host="${{ secrets.DATABASE_HOST }}" \
             --port="${{ secrets.DATABASE_PORT }}" \
             --username="postgres" \
+            --password="${{ secrets.DATABASE_PASSWORD }}" \
             --dbname="${{ secrets.DATABASE_NAME }}" \
             --file=database/schema.sql
 
