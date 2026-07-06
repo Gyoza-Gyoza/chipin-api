@@ -79,13 +79,13 @@ jobs:
             https://deploy.gyozas.dev/deploy
 
   notify:
+    if: always()
     needs:
       - build
       - deploy
     runs-on: ubuntu-latest
     steps:
       - name: Send notification
-        if: always()
         run: |
           JOB_STATUS=""
           
