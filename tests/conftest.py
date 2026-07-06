@@ -35,5 +35,5 @@ def test_user():
                 email = "unittesting@email.com",
                 first_name = "unittesting",
                 last_name = "unittesting",
-                phone_number = 91234567
+                phone_number = "91234567"
                 )
