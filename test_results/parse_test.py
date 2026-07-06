@@ -20,7 +20,7 @@ for testcase in testcases:
             failed_tests.append(testcase.attrib['name'])
 print(failed_tests)
 
-with open(os.environ["GITHUB_ENV"], "a") as env:
+with open(os.environ["GITHUB_OUTPUT"], "a") as env:
     env.write(f"test_count={test_count}\n")
     env.write(f"test_successes={test_successes}\n")
     env.write(f"test_errors={test_errors}\n")
