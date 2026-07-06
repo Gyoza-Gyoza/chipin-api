@@ -29,7 +29,7 @@ jobs:
           - 5432:5432
 
         options: >- 
-          --health-cmd="pg_isready -U ${{ env.DATABASE_USER }} -d ${{ env.DATABASE_NAME }}"
+          --health-cmd="pg_isready -U postgres -d chipin_test"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=10
