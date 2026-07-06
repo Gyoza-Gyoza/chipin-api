@@ -14,22 +14,22 @@ jobs:
       DATABASE_HOST: localhost
       DATABASE_PORT: 5432
       DATABASE_NAME: chipin_test
+      DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
 
     services:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_HOST: $DATABASE_HOST
-          POSTGRES_DB: $DATABASE_NAME
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: $DATABASE_PASSWORD
+          POSTGRES_DB: ${{ env.DATABASE_NAME }}
+          POSTGRES_USER: ${{ env.DATABASE_USER }}
+          POSTGRES_PASSWORD: ${{ env.DATABASE_PASSWORD }}
 
         ports:
           - 5432:5432
 
         options: >- 
-          --health-cmd="pg_isready -U postgres -d chipin_test"
+          --health-cmd="pg_isready -U ${{ env.DATABASE_USER }} -d ${{ env.DATABASE_NAME }}"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=10
@@ -62,11 +62,11 @@ jobs:
           psql \
             --host="$DATABASE_HOST" \
             --port="$DATABASE_PORT" \
-            --username="postgres" \
+            --username="$DATABASE_USER" \
             --dbname="$DATABASE_NAME" \
             --file=database/schema.sql
         env:
-          PGPASSWORD: $DATABASE_PASSWORD
+          PGPASSWORD: ${{ env.DATABASE_PASSWORD }}
 
       - name: Run tests
         run: python -m pytest tests --junitxml=test_results/test_results.xml
