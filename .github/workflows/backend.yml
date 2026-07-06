@@ -69,7 +69,7 @@ jobs:
           PGPASSWORD: ${{ env.DATABASE_PASSWORD }}
 
       - name: Run tests
-        run: python -m pytest tests --junitxml=test_results/test_results.xml
+        run: python -m pytest tests --junitxml=test_results.xml
 
       - name: Parse test results
         run: python test_results/parse_test.py
