@@ -1,6 +1,6 @@
 ﻿from fastapi import APIRouter, status
 from pydantic import BaseModel, computed_field, Field
-from database import get_connection
+from data.database import get_connection
 import decimal
 from datetime import datetime
 from data.items import Item, initialize_items
@@ -18,6 +18,7 @@ class ReceiptIDs(BaseModel):
     date: datetime
     item_ids: list[int]
 class ReceiptData(BaseModel):
+    receipt_id: int
     title: str
     date: datetime
     amount: decimal.Decimal = Field(10)
@@ -105,13 +106,26 @@ def get_receipt_by_user_id(user_id: int):
 
         receipts = cursor.fetchall()
 
+        result = []
         for receipt in receipts:
             cursor.execute("""
             SELECT * FROM items 
             WHERE receipt_id = %s""",
-                           receipt.receipt_id)
+                           (receipt['receipt_id'],))
+            itemList = cursor.fetchall()
+            items = []
+            for item in itemList:
+                items.append(Item(amount = item['amount'],
+                                  title = item['title'],
+                                  item_count = item['item_count']))
 
-        return cursor.fetchall()
+            result.append(ReceiptData(receipt_id = receipt['receipt_id'],
+                                      title = receipt['title'],
+                                      amount = receipt['amount'],
+                                      date = receipt['date'],
+                                      items = items))
+
+        return result
 
     except Exception as e:
         print(type(e))
@@ -143,9 +157,10 @@ def get_receipt_by_receipt_id(receipt_id: int):
         for item in row:
             items.append(Item(amount = item['amount'],
                               title = item['title'],
-                              item_count= item['count']))
+                              item_count= item['item_count']))
 
-        receipt_data = ReceiptData(title = row[0]['title'],
+        receipt_data = ReceiptData(receipt_id = receipt_id,
+                                   title = row[0]['title'],
                                    amount = row[0]['amount'],
                                    date = row[0]['date'],
                                    items = items)

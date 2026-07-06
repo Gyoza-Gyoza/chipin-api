@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, HTTPException
-from database import get_connection
+from data.database import get_connection
 from pydantic import BaseModel, Field
 import decimal
 from psycopg import cursor

@@ -1,0 +1,121 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+  
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checks directory
+        run: |
+          pwd
+          ls
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify application imports
+        run: python -c "import main"
+
+      - name: Build Docker image
+        run: docker build -t chipin-api .
+
+      - name: Run tests
+        run: python -m pytest tests --junitxml=test_results/test_results.xml
+
+      - name: Parse test results
+        run: python tests/parse_test.py
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run build
+        run: |
+          curl -v \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
+            https://deploy.gyozas.dev/deploy
+
+  notify:
+    needs:
+      - build
+      - deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification
+        if: always()
+        run: |
+          JOB_STATUS=""
+          
+          append_status(){
+            local name="$1"
+            local status="$2"
+          
+            JOB_STATUS+="$name: "
+            
+            case "$status" in 
+              success)
+                JOB_STATUS+="SUCCESS"
+                ;;
+              failure)
+                JOB_STATUS+="FAILURE"
+                ;;
+              skipped)
+                JOB_STATUS+="SKIPPED"
+                ;;
+              cancelled)
+                JOB_STATUS+="CANCELLED"
+                ;;
+              *)
+                JOB_STATUS+="UNKNOWN"
+                ;;
+          esac
+          
+          JOB_STATUS+=$'\n'
+          }
+          
+          append_status "Build" "${{ needs.build.result }}"
+          append_status "Deploy" "${{ needs.deploy.result }}"
+          
+          MESSAGE="
+          Deployment Pipeline $STATUS
+          
+          Repository: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.event.head_commit.message }}
+          Run: #${{ github.run_number }}
+          
+          Tests run: $TEST_COUNT
+          Successes: $TEST_SUCCESSES
+          Errors: $TEST_ERRORS
+          Failures: $TEST_FAILURES
+          Skipped: $TEST_SKIPPED
+          
+          Failed tests: 
+          $FAILED_TESTS
+          
+          $JOB_STATUS
+          https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          curl -v \
+          -X POST \
+          https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"chat_id\":\"${{ secrets.TELEGRAM_CHAT_ID }}\",
+            \"text\":\"$MESSAGE\"
+          }"

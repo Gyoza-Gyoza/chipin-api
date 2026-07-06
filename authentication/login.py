@@ -1,9 +1,9 @@
 ﻿from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-from database import get_connection
+from data.database import get_connection
 from argon2 import PasswordHasher
-from argon2.exceptions import VerificationError, VerifyMismatchError
+from argon2.exceptions import VerifyMismatchError
 
 
 class LoginRequest(BaseModel):
