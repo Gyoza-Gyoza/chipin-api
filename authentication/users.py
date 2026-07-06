@@ -10,7 +10,7 @@ class User(BaseModel):
     email: str
     first_name: str
     last_name: str
-    phone_number: int
+    phone_number: str
 
 router = APIRouter(
     prefix = "/users",
