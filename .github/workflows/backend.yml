@@ -14,6 +14,7 @@ jobs:
       postgres:
         image: postgres:17
         env:
+          POSTGRES_HOST: ${{ secrets.DATABASE_HOST }}
           POSTGRES_DB: ${{ secrets.DATABASE_NAME }}
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
