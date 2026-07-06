@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -32,6 +32,12 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t chipin-api .
+
+      - name: Run tests
+        run: python -m pytest tests --junitxml=test_results/test_results.xml
+
+      - name: Parse test results
+        run: python tests/parse_test.py
 
   deploy:
     needs: build
@@ -43,13 +49,6 @@ jobs:
             -X POST \
             -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
             https://deploy.gyozas.dev/deploy
-
-      - name: Run tests
-        run: |
-          curl -v \
-            -X POST \
-            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
-            https://deploy.gyozas.dev/test
 
   notify:
     needs:
@@ -99,6 +98,15 @@ jobs:
           Branch: ${{ github.ref_name }}
           Commit: ${{ github.event.head_commit.message }}
           Run: #${{ github.run_number }}
+          
+          Tests run: $TEST_COUNT
+          Successes: $TEST_SUCCESSES
+          Errors: $TEST_ERRORS
+          Failures: $TEST_FAILURES
+          Skipped: $TEST_SKIPPED
+          
+          Failed tests: 
+          $FAILED_TESTS
           
           $JOB_STATUS
           https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

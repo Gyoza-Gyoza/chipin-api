@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<testsuites name="pytest tests">
-    <testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.362"
-               timestamp="2026-07-06T02:38:31.810008+08:00" hostname="Goon">
-        <testcase classname="tests.test_receipts" name="test_create_receipt" time="0.335"/>
-    </testsuite>
-</testsuites>
