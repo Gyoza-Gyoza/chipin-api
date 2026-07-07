@@ -72,6 +72,7 @@ jobs:
         run: python -m pytest tests --junitxml=test_results.xml
 
       - name: Parse test results
+        if: always()
         id: parse_tests
         run: python test_results/parse_test.py
 
