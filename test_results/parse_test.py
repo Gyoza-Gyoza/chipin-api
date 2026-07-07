@@ -18,7 +18,6 @@ for testcase in testcases:
         outcome = testcase.find(result)
         if testcase.find(result) is not None:
             failed_tests.append(testcase.attrib['name'])
-print(failed_tests)
 
 with open(os.environ["GITHUB_OUTPUT"], "a") as env:
     env.write(f"test_count={test_count}\n")

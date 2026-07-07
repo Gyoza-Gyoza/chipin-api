@@ -151,7 +151,7 @@ jobs:
           Skipped: ${{ needs.build.outputs.test_skipped }}
           
           Failed tests: 
-          $FAILED_TESTS
+          ${{ needs.build.outputs.failed_tests }}
           
           $JOB_STATUS
           https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
