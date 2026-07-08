@@ -159,10 +159,15 @@ def get_receipt_by_receipt_id(receipt_id: int):
                               title = item['title'],
                               item_count= item['item_count']))
 
+        cursor.execute("""
+        SELECT * FROM receipts 
+        WHERE receipt_id = %s""",
+                       (receipt_id,))
+        receipt = cursor.fetchone()
         receipt_data = ReceiptData(receipt_id = receipt_id,
-                                   title = row[0]['title'],
-                                   amount = row[0]['amount'],
-                                   date = row[0]['date'],
+                                   title = receipt['title'],
+                                   amount = receipt['amount'],
+                                   date = receipt['date'],
                                    items = items)
         return receipt_data
 
@@ -218,7 +223,7 @@ def delete_receipt(receipt_id: int):
         DELETE FROM receipts 
         WHERE receipt_id = %s""",
                        (receipt_id,))
-        cursor.commit()
+        conn.commit()
 
     except Exception as e:
         conn.rollback()

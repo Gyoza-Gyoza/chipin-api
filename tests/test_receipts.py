@@ -12,8 +12,9 @@ def test_get_receipt(created_receipt, test_receipt_data):
     client = TestClient(app)
     response = client.get(f"/receipts/{created_receipt['receipt_id']}")
 
+    test_receipt_json = test_receipt_data.model_dump(mode = "json")
     assert response.status_code == 200
-    assert response.json() == test_receipt_data
-    # assert response.json()['receipt_id'] == created_receipt['receipt_id']
-    # assert response.json()['amount'] == created_receipt['amount']
-    # assert response.json()['items'] == created_receipt['items']
+    assert response.json()['receipt_id'] == test_receipt_json['receipt_id']
+    assert response.json()['title'] == test_receipt_json['title']
+    assert response.json()['amount'] == test_receipt_json['amount']
+    assert response.json()['items'] == test_receipt_json['items']
