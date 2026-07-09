@@ -97,11 +97,14 @@ jobs:
 
   notify:
     if: always()
+    continue-on-error: true
     needs:
       - build
       - deploy
     runs-on: ubuntu-latest
     steps:
+      - name: Test failure
+        run: exit 1
       - name: Send notification
         run: |
           JOB_STATUS=""
