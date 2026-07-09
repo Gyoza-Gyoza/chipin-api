@@ -155,7 +155,7 @@ def get_receipt_by_receipt_id(receipt_id: int):
                        (receipt_id,))
         row = cursor.fetchall()
 
-        if row is None:
+        if not row:
             raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
                                 detail = "No items found")
         items = []
@@ -170,7 +170,7 @@ def get_receipt_by_receipt_id(receipt_id: int):
                        (receipt_id,))
         receipt = cursor.fetchone()
 
-        if receipt is None:
+        if not receipt:
             raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
                                 detail = "No receipts found")
 

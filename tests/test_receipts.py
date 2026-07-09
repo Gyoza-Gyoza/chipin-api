@@ -9,6 +9,7 @@ def test_create_receipt(test_receipt):
         "/receipts",
         json = test_receipt.model_dump(mode = "json"))
     assert response.status_code == 201
+
 def test_get_receipt_by_id(created_receipt):
     client = TestClient(app)
     response = client.get(f"/receipts/{created_receipt['receipt_id']}")
@@ -22,6 +23,7 @@ def test_get_receipt_by_id(created_receipt):
     assert receipt_dict['title'] == created_receipt['title']
     assert receipt_dict['amount'] == str(total_cost)
     assert receipt_dict['items'] == created_receipt['items']
+
 def test_get_receipt_by_user(created_receipt):
     client = TestClient(app)
 
@@ -32,6 +34,7 @@ def test_get_receipt_by_user(created_receipt):
     assert isinstance(receipt_dict, list)
     for receipt in receipt_dict:
         assert receipt['owner_id'] == created_receipt['owner_id']
+
 def test_update_receipt(created_receipt, test_receipt_update):
     client = TestClient(app)
 
@@ -56,6 +59,7 @@ def test_update_receipt(created_receipt, test_receipt_update):
     assert updated_dict['title'] == test_receipt_update.title
     assert updated_dict['items'] == updated_receipt_dict['items']
     assert updated_dict['owner_id'] == initial_receipt['owner_id']
+
 def test_delete_receipt(created_receipt):
     client = TestClient(app)
 
