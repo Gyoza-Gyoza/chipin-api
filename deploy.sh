@@ -10,6 +10,7 @@ cd "$PROJECT_DIR"
 
 echo "Removing changes..."
 git reset --hard HEAD
+git clean -fd
 
 echo "Pulling latest changes..."
 git pull
