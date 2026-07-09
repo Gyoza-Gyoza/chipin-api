@@ -3,7 +3,7 @@ import pytest
 from datetime import datetime
 from authentication.users import User
 from data.items import Item
-from data.receipts import Receipt, ReceiptData
+from data.receipts import Receipt, ReceiptUpdate
 from fastapi.testclient import TestClient
 from main import app
 
@@ -15,15 +15,9 @@ def test_receipt(test_item, created_user):
                    items = [test_item, test_item],
                    )
 @pytest.fixture
-def test_receipt_data(test_item, created_user, created_receipt, test_receipt):
-    total_cost = Decimal(0.0)
-    for item in created_receipt['items']:
-        total_cost += Decimal(item['amount'])
-    return ReceiptData(receipt_id = created_receipt['receipt_id'],
-                       title = created_receipt['title'],
-                       date = created_receipt['date'],
-                       amount = total_cost,
-                       items = created_receipt['items'])
+def test_receipt_update(test_item_update, created_user):
+    return ReceiptUpdate(title = "Alternate Test Receipt",
+                         items = [test_item_update])
 @pytest.fixture
 def created_receipt(test_receipt):
     client = TestClient(app)
@@ -42,7 +36,11 @@ def test_item():
     return Item(title = "Unit Testing Test Item",
                 amount = Decimal("10.00"),
                 item_count = 1)
-
+@pytest.fixture
+def test_item_update():
+    return Item(title = "Alternate Test Item",
+                amount = Decimal("5.00"),
+                item_count = 2)
 @pytest.fixture
 def test_user():
     return User(username = "Unit Testing Test User",

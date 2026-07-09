@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, status
+﻿from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, computed_field, Field
 from data.database import get_connection
 import decimal
@@ -19,6 +19,7 @@ class ReceiptIDs(BaseModel):
     item_ids: list[int]
 class ReceiptData(BaseModel):
     receipt_id: int
+    owner_id: int
     title: str
     date: datetime
     amount: decimal.Decimal = Field(10)
@@ -100,7 +101,7 @@ def get_receipt_by_user_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipt_id, title, amount, date FROM receipts
+        SELECT receipt_id, owner_id, title, amount, date FROM receipts
         WHERE owner_id = %s""",
                        (user_id,))
 
@@ -120,6 +121,7 @@ def get_receipt_by_user_id(user_id: int):
                                   item_count = item['item_count']))
 
             result.append(ReceiptData(receipt_id = receipt['receipt_id'],
+                                      owner_id = receipt['owner_id'],
                                       title = receipt['title'],
                                       amount = receipt['amount'],
                                       date = receipt['date'],
@@ -153,6 +155,9 @@ def get_receipt_by_receipt_id(receipt_id: int):
                        (receipt_id,))
         row = cursor.fetchall()
 
+        if row is None:
+            raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
+                                detail = "No items found")
         items = []
         for item in row:
             items.append(Item(amount = item['amount'],
@@ -164,17 +169,26 @@ def get_receipt_by_receipt_id(receipt_id: int):
         WHERE receipt_id = %s""",
                        (receipt_id,))
         receipt = cursor.fetchone()
-        receipt_data = ReceiptData(receipt_id = receipt_id,
-                                   title = receipt['title'],
-                                   amount = receipt['amount'],
-                                   date = receipt['date'],
-                                   items = items)
-        return receipt_data
 
+        if receipt is None:
+            raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
+                                detail = "No receipts found")
+
+        else:
+            receipt_data = ReceiptData(receipt_id = receipt_id,
+                                       owner_id = receipt['owner_id'],
+                                       title = receipt['title'],
+                                       amount = receipt['amount'],
+                                       date = receipt['date'],
+                                       items = items)
+            return receipt_data
     except Exception as e:
         print(type(e))
         print(e)
         raise
+    finally:
+        cursor.close()
+        conn.close()
 
 @router.put(
     "/{receipt_id}",
