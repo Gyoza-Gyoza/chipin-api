@@ -91,6 +91,7 @@ jobs:
       - name: Run build
         run: |
           STATUS=$(curl \
+            -o response.json \
             -w "%{http_code}" \
             -X POST \
             -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
