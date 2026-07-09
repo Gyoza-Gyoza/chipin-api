@@ -1,0 +1,66 @@
+# Use postgres/example user/password credentials
+
+services:
+  chipin: 
+    build: .
+    container_name: chipin-api
+    environment: 
+      PYTHONUNBUFFERED: 1
+    ports: 
+      - 8000:8000
+    networks: 
+      - backend
+
+  chipin-db:
+    image: postgres
+    container_name: chipin-db
+    ports: 
+      - 5434:5432
+    restart: always
+    # set shared memory limit when using docker compose
+    shm_size: 128mb
+    # or set shared memory limit when deploy via swarm stack
+    #volumes:
+    #  - type: tmpfs
+    #    target: /dev/shm
+    #    tmpfs:
+    #      size: 134217728 # 128*2^20 bytes = 128Mb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: chipin-db
+    volumes:
+      - chipin-data:/var/lib/postgresql
+    networks: 
+      - backend
+    command: 
+      - postgres
+      - -c
+      - timezone=Asia/Singapore
+
+  adminer:
+    image: adminer
+    container_name: chipin-adminer
+    restart: always
+    ports:
+      - 8082:8080
+    networks: 
+      - backend
+    environment: 
+      MEMORY: 512M
+      UPLOAD: 4096M
+ 
+#  cloudflared:
+#    image: cloudflare/cloudflared:latest
+#    container_name: chipin-cloudflare
+#    restart: unless-stopped
+#    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+#    networks: 
+#      - backend
+
+volumes:
+  chipin-data:
+
+networks: 
+  backend: 
+    external: true
