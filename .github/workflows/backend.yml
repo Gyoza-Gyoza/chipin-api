@@ -95,7 +95,7 @@ jobs:
             -X POST \
             -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
             https://deploy.gyozas.dev/deploy)
-          
+          echo $STATUS
           if [ "$STATUS" != "200" ]; then
             exit 1
           fi 
