@@ -90,10 +90,15 @@ jobs:
     steps:
       - name: Run build
         run: |
-          curl -v \
+          STATUS = $(curl -v \
+            -w "%{{http_code}" \
             -X POST \
             -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
-            https://deploy.gyozas.dev/deploy
+            https://deploy.gyozas.dev/deploy)
+          
+          if [ "$STATUS" != "200" ]; then
+            exit 1
+          fi 
 
   notify:
     if: always()
