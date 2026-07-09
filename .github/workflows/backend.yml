@@ -102,6 +102,7 @@ jobs:
       - build
       - deploy
     runs-on: ubuntu-latest
+    steps:
       - name: Send notification
         run: |
           JOB_STATUS=""
