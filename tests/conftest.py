@@ -94,6 +94,15 @@ def test_item_update():
                 amount = Decimal("5.00"),
                 item_count = 2)
 @pytest.fixture
+def test_update_sharer_request_true(created_item):
+    return UpdateSharerRequest(item_ids = [created_item.item_id,],
+                               state = True)
+@pytest.fixture
+def test_update_sharer_request_false(created_item):
+    return UpdateSharerRequest(item_ids = [created_item.item_id,],
+                               state = False)
+
+@pytest.fixture
 def test_user():
     return User(username = "Unit Testing Test User",
                 password = "Unittestpassword",

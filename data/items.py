@@ -73,15 +73,15 @@ def update_sharers(user_id: int, update_sharers_request: UpdateSharerRequest):
 
     try:
         for item_id in update_sharers_request.item_ids:
+            cursor.execute("""
+                           DELETE FROM item_payers
+                           WHERE item_id = %s AND user_id = %s""",
+                           (item_id, user_id))
+
             if update_sharers_request.state:
                 cursor.execute("""
                 INSERT INTO item_payers (item_id, user_id) 
                 VALUES (%s, %s)""",
-                               (item_id, user_id))
-            else:
-                cursor.execute("""
-                DELETE FROM item_payers
-                WHERE item_id = %s AND user_id = %s""",
                                (item_id, user_id))
 
         conn.commit()
