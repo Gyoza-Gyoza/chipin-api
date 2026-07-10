@@ -2,10 +2,12 @@ from decimal import Decimal
 import pytest
 from datetime import datetime
 from authentication.users import User
-from data.items import Item
+from data.items import Item, ItemData, UpdateSharerRequest
 from data.receipts import Receipt, ReceiptUpdate
 from fastapi.testclient import TestClient
 from main import app
+from data.database import get_connection
+from psycopg import cursor
 
 @pytest.fixture
 def test_receipt(test_item, created_user):
@@ -36,6 +38,56 @@ def test_item():
     return Item(title = "Unit Testing Test Item",
                 amount = Decimal("10.00"),
                 item_count = 1)
+@pytest.fixture
+def created_item(test_item, created_receipt):
+    conn = get_connection()
+    cursor = conn.cursor()
+    client = TestClient(app)
+
+    try:
+        cursor.execute("""
+        INSERT INTO items (receipt_id, title, amount, item_count)
+        VALUES (%s, %s, %s, %s)
+        RETURNING item_id""",
+                       (created_receipt['receipt_id'],
+                        test_item.title,
+                        test_item.amount,
+                        test_item.item_count))
+        item_id = cursor.fetchone()['item_id']
+        conn.commit()
+
+        response = client.put(
+            f"/items/paid_by/{created_receipt['owner_id']}",
+            json = UpdateSharerRequest(item_ids = [item_id,],
+                                       state = True).model_dump(mode = "json")
+        )
+        assert response.status_code == 200
+
+        cursor.execute("""
+        SELECT user_id FROM item_payers
+        WHERE item_id = %s""", (item_id, ))
+        rows = cursor.fetchall()
+        user_ids = []
+        for row in rows:
+            user_ids.append(int(row['user_id']))
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        print(type(e))
+        print(e)
+        raise
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return ItemData(item_id = item_id,
+                    title = test_item.title,
+                    amount = test_item.amount,
+                    item_count = test_item.item_count,
+                    current_sharers = user_ids)
 @pytest.fixture
 def test_item_update():
     return Item(title = "Alternate Test Item",

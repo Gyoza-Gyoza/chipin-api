@@ -9,26 +9,71 @@ class Item(BaseModel):
     amount: decimal.Decimal = Field(10)
     item_count: int = Field(1)
 class ItemData(BaseModel):
+    item_id: int
     title: str
     amount: decimal.Decimal = Field(10)
     item_count: int = Field(1)
-    current_sharers: list[int]
+    current_sharers: list[int] = []
+class UpdateSharerRequest(BaseModel):
+    item_ids: list[int]
+    state: bool
 
 router = APIRouter(
     prefix = "/items",
     tags = ["Items"]
 )
-@router.put(
-    "/paid_by/{user_id}",
-    status_code = status.HTTP_200_OK
+
+@router.get(
+    "/{item_id}",
+    status_code = status.HTTP_200_OK,
+    response_model = ItemData
 )
-def update_sharers(user_id: int, item_ids: list[int], state: bool):
+def get_item_data(item_id: int):
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
-        for item_id in item_ids:
-            if state:
+        cursor.execute("""
+        SELECT title, amount, item_count, array_agg(item_payers.user_id) AS current_sharers
+        FROM items LEFT JOIN item_payers
+        ON items.item_id = item_payers.item_id
+        WHERE items.item_id = %s
+        GROUP BY title, amount, item_count""",
+                       (item_id,))
+
+        item_data = cursor.fetchone()
+        current_sharers =[]
+        for user_id in item_data['current_sharers']:
+            if user_id is not None:
+                print(user_id)
+                current_sharers.append(int(user_id))
+
+        print(item_data)
+        return ItemData(item_id = item_id,
+                        title = item_data['title'],
+                        amount = item_data['amount'],
+                        item_count = item_data['item_count'],
+                        current_sharers = current_sharers)
+
+    except Exception as e:
+        print(type(e))
+        print(e)
+        raise
+
+    finally:
+        cursor.close()
+        conn.close()
+@router.put(
+    "/paid_by/{user_id}",
+    status_code = status.HTTP_200_OK
+)
+def update_sharers(user_id: int, update_sharers_request: UpdateSharerRequest):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        for item_id in update_sharers_request.item_ids:
+            if update_sharers_request.state:
                 cursor.execute("""
                 INSERT INTO item_payers (item_id, user_id) 
                 VALUES (%s, %s)""",
@@ -51,86 +96,26 @@ def update_sharers(user_id: int, item_ids: list[int], state: bool):
         cursor.close()
         conn.close()
 
-    if state:
+    if update_sharers_request.state:
         return {"message": "Sharer added"}
     else:
         return {"message": "Sharer removed"}
 
-@router.get(
-    "/{item_id}",
-    status_code = status.HTTP_200_OK,
-    response_model = ItemData
-)
-def get_item_data(item_id: int):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute("""
-        SELECT title, amount, item_count, array_agg(item_payers.user_id) AS current_sharers
-        FROM items LEFT JOIN item_payers
-        ON items.item_id = item_payers.item_id
-        WHERE items.item_id = %s
-        GROUP BY title, amount, item_count""",
-                       (item_id,))
-
-        item_data = cursor.fetchone()
-
-        return ItemData(title = item_data['title'],
-                        amount = item_data['amount'],
-                        item_count = item_data['item_count'],
-                        current_sharers = item_data['current_sharers'])
-
-    except Exception as e:
-        print(type(e))
-        print(e)
-        raise
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
-# @router.get(
-#     "/",
-#     status_code = status.HTTP_200_OK,
-#     response_model = list[Item]
-# )
-# def get_item():
-#     conn = get_connection()
-#     cursor = conn.cursor()
-#
-#     cursor.execute("""
-#     SELECT * FROM items""")
-#
-#     items = cursor.fetchall()
-#
-#     cursor.close()
-#     conn.close()
-#
-#     return items
-#
-# # Change to adding sharers instead of items
-# @router.get(
+# @router.put(
 #     "/{item_id}",
-#     status_code = status.HTTP_200_OK,
-#     response_model = Item
+#     status_code = status.HTTP_200_OK
 # )
-# def get_item(item_id: int):
+# def set_item_state(state: bool, item_id: int):
 #     conn = get_connection()
 #     cursor = conn.cursor()
 #
 #     try:
 #         cursor.execute("""
-#         SELECT * FROM items
+#         UPDATE items SET paid = %s
 #         WHERE item_id = %s""",
-#                        (item_id,))
+#                        (state, item_id))
+#         conn.commit()
 #
-#         item = cursor.fetchone()
-#
-#         if item is None:
-#             raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
-#                                 detail = "Item not found")
 #     except Exception as e:
 #         conn.rollback()
 #         print(type(e))
@@ -140,34 +125,6 @@ def get_item_data(item_id: int):
 #     finally:
 #         cursor.close()
 #         conn.close()
-#
-#     return item
-
-# Add function for editing sharers and one for editing items
-@router.put(
-    "/{item_id}",
-    status_code = status.HTTP_200_OK
-)
-def set_item_state(state: bool, item_id: int):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute("""
-        UPDATE items SET paid = %s
-        WHERE item_id = %s""",
-                       (state, item_id))
-        conn.commit()
-
-    except Exception as e:
-        conn.rollback()
-        print(type(e))
-        print(e)
-        raise
-
-    finally:
-        cursor.close()
-        conn.close()
 
 @router.delete(
     "/{item_id}",
