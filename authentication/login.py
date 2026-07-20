@@ -24,7 +24,7 @@ def login(request: LoginRequest):
 
     try:
         cursor.execute("""
-            SELECT password FROM users 
+            SELECT password, user_id FROM users 
             WHERE username = %s""",
                        (request.username,))
 
@@ -48,4 +48,4 @@ def login(request: LoginRequest):
         cursor.close()
         conn.close()
 
-    return {"message": "Login successful"}
+    return {'user_id': f"{user['user_id']}"}
