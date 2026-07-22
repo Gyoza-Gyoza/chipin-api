@@ -121,11 +121,8 @@ def get_receipt_by_user_id(user_id: int):
         result = []
         for receipt in receipts:
             cursor.execute("""
-            SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
-            LEFT JOIN receipt_sharers
-            ON receipts.receipt_id = receipt_sharers.receipt_id
-            WHERE owner_id = %s
-            GROUP BY receipts.receipt_id""",
+            SELECT * FROM items 
+            WHERE receipt_id = %s""",
                            (receipt['receipt_id'],))
             itemList = cursor.fetchall()
             items = []
