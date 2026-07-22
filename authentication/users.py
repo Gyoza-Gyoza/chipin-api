@@ -12,6 +12,14 @@ class User(BaseModel):
     last_name: str
     phone_number: str
 
+class UserDetails(BaseModel):
+    user_id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    phone_number: str
+
 router = APIRouter(
     prefix = "/users",
     tags = ["Users"]
@@ -76,7 +84,7 @@ def get_users():
 @router.get(
     "/{username}",
     status_code = status.HTTP_200_OK,
-    response_model = User
+    response_model = UserDetails
 )
 def get_user(username: str):
     conn = get_connection()
@@ -89,7 +97,12 @@ def get_user(username: str):
 
         user = cursor.fetchone()
 
-        return user
+        return (UserDetails(username = username,
+                            user_id = user['user_id'],
+                            email = user['email'],
+                            first_name = user['first_name'],
+                            last_name = user['last_name'],
+                            phone_number = user['phone_number']))
 
     except TypeError:
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
