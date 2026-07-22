@@ -109,7 +109,7 @@ def get_receipt_by_user_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.receipt_id) AS sharer_ids FROM receipts
+        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
         LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
         WHERE owner_id = %s
@@ -131,13 +131,19 @@ def get_receipt_by_user_id(user_id: int):
                                   title = item['title'],
                                   item_count = item['item_count']))
 
+            sharer_ids = []
+            sharer_ids.append(user_id)
+            for sharer in receipt['sharer_ids']:
+                if sharer:
+                    sharer_ids.append(sharer)
+
             result.append(ReceiptData(receipt_id = receipt['receipt_id'],
                                       owner_id = receipt['owner_id'],
                                       title = receipt['title'],
                                       amount = receipt['amount'],
                                       date = receipt['date'],
                                       items = items,
-                                      sharer_ids = receipt['sharer_ids']))
+                                      sharer_ids = sharer_ids))
 
         return result
 
@@ -185,6 +191,12 @@ def get_receipt_by_receipt_id(receipt_id: int):
                        (receipt_id,))
         receipt = cursor.fetchone()
 
+        sharer_ids = []
+        sharer_ids.append(receipt['owner_id'])
+        for sharer in receipt['sharer_ids']:
+            if sharer:
+                sharer_ids.append(sharer)
+
         if not receipt:
             raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
                                 detail = "No receipts found")
@@ -196,7 +208,7 @@ def get_receipt_by_receipt_id(receipt_id: int):
                                        amount = receipt['amount'],
                                        date = receipt['date'],
                                        items = items,
-                                       sharer_ids = receipt['sharer_ids'])
+                                       sharer_ids = sharer_ids)
             return receipt_data
     except Exception as e:
         print(type(e))
