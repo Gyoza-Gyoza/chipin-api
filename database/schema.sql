@@ -21,6 +21,11 @@ CREATE SEQUENCE public.items_item_id_seq
     CACHE 1;
 ALTER SEQUENCE public.items_item_id_seq OWNED BY public.items.item_id;
 
+CREATE TABLE public.receipt_sharers (
+    receipt_id integer NOT NULL,
+    sharer_id integer NOT NULL
+);
+
 CREATE TABLE public.receipts (
     receipt_id integer NOT NULL,
     owner_id integer CONSTRAINT receipts_payer_id_not_null NOT NULL,
@@ -74,5 +79,9 @@ ALTER TABLE ONLY public.item_payers
     ADD CONSTRAINT item_payers_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
 ALTER TABLE ONLY public.items
     ADD CONSTRAINT items_receipt_id_fkey FOREIGN KEY (receipt_id) REFERENCES public.receipts(receipt_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.receipts
+    ADD CONSTRAINT receipts_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.receipt_sharers
+    ADD CONSTRAINT receipt_sharers_sharer_id_fkey FOREIGN KEY (sharer_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
 ALTER TABLE ONLY public.receipts
     ADD CONSTRAINT receipts_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
