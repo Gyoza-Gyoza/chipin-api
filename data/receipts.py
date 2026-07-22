@@ -109,10 +109,11 @@ def get_receipt_by_user_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.receipt_id) AS sharer_ids FROM receipts
+        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.receipt_id) AS sharer_ids FROM receipts
         LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
-        WHERE owner_id = %s""",
+        WHERE owner_id = %s
+        GROUP BY receipts.receipt_id""",
                        (user_id,))
 
         receipts = cursor.fetchall()
