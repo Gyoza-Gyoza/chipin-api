@@ -7,11 +7,13 @@ from data.items import Item, initialize_items
 
 class Receipt(BaseModel):
     owner_id: int
+    sharer_ids: list[int]
     title: str
     date: datetime = datetime.now()
     items: list[Item]
 class ReceiptUpdate(BaseModel):
     title: str
+    sharer_ids: list[int]
     items: list[Item]
 class ReceiptIDs(BaseModel):
     receipt_id: int
@@ -20,6 +22,7 @@ class ReceiptIDs(BaseModel):
 class ReceiptData(BaseModel):
     receipt_id: int
     owner_id: int
+    sharer_ids: list[int]
     title: str
     date: datetime
     amount: decimal.Decimal = Field(10)
@@ -75,6 +78,11 @@ def create_receipt(receipt: Receipt):
 
         item_ids = initialize_items(cursor, receipt_id, receipt.items)
 
+        for sharer in receipt.sharer_ids:
+            cursor.execute("""
+            INSERT INTO receipt_sharers (receipt_id, sharer_id)
+            VALUES (%s, %s)""",
+                           (receipt_id, sharer))
         conn.commit()
         return ReceiptIDs(receipt_id = receipt_id,
                           date = date,
@@ -101,7 +109,9 @@ def get_receipt_by_user_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipt_id, owner_id, title, amount, date FROM receipts
+        SELECT receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.receipt_id) AS sharer_ids FROM receipts
+        LEFT JOIN receipt_sharers
+        ON receipts.receipt_id = receipt_sharers.receipt_id
         WHERE owner_id = %s""",
                        (user_id,))
 
@@ -110,8 +120,11 @@ def get_receipt_by_user_id(user_id: int):
         result = []
         for receipt in receipts:
             cursor.execute("""
-            SELECT * FROM items 
-            WHERE receipt_id = %s""",
+            SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+            LEFT JOIN receipt_sharers
+            ON receipts.receipt_id = receipt_sharers.receipt_id
+            WHERE owner_id = %s
+            GROUP BY receipts.receipt_id""",
                            (receipt['receipt_id'],))
             itemList = cursor.fetchall()
             items = []
@@ -125,7 +138,8 @@ def get_receipt_by_user_id(user_id: int):
                                       title = receipt['title'],
                                       amount = receipt['amount'],
                                       date = receipt['date'],
-                                      items = items))
+                                      items = items,
+                                      sharer_ids = receipt['sharer_ids']))
 
         return result
 
@@ -165,8 +179,11 @@ def get_receipt_by_receipt_id(receipt_id: int):
                               item_count= item['item_count']))
 
         cursor.execute("""
-        SELECT * FROM receipts 
-        WHERE receipt_id = %s""",
+        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+        LEFT JOIN receipt_sharers
+        ON receipts.receipt_id = receipt_sharers.receipt_id
+        WHERE receipts.receipt_id = %s
+        GROUP BY receipts.receipt_id""",
                        (receipt_id,))
         receipt = cursor.fetchone()
 
@@ -180,7 +197,8 @@ def get_receipt_by_receipt_id(receipt_id: int):
                                        title = receipt['title'],
                                        amount = receipt['amount'],
                                        date = receipt['date'],
-                                       items = items)
+                                       items = items,
+                                       sharer_ids = receipt['sharer_ids'])
             return receipt_data
     except Exception as e:
         print(type(e))
