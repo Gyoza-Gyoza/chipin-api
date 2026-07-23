@@ -271,7 +271,8 @@ def get_receipt_by_receipt_id(receipt_id: int):
             sharer_ids.append(receipt['owner_id'])
             for sharer in receipt['sharer_ids']:
                 if sharer:
-                    sharer_ids.append(sharer)
+                    if sharer not in sharer_ids:
+                        sharer_ids.append(sharer)
 
         if not receipt:
             raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
