@@ -3,7 +3,7 @@ from pydantic import BaseModel, computed_field, Field
 from data.database import get_connection
 import decimal
 from datetime import datetime
-from data.items import ItemData, get_items_of_receipt, initialize_items
+from data.items import Item, ItemData, get_items_of_receipt, initialize_items
 
 class Receipt(BaseModel):
     owner_id: int
@@ -11,10 +11,17 @@ class Receipt(BaseModel):
     title: str
     date: datetime = datetime.now()
     items: list[ItemData] | None
+
+class ReceiptCreate(BaseModel):
+    owner_id: int
+    sharer_ids: list[int]
+    title: str
+    date: datetime = datetime.now()
+    items: list[Item] | None
 class ReceiptUpdate(BaseModel):
     title: str
     sharer_ids: list[int]
-    items: list[ItemData] | None
+    items: list[Item]
 class ReceiptIDs(BaseModel):
     receipt_id: int
     date: datetime
@@ -53,7 +60,7 @@ router = APIRouter(
     status_code = status.HTTP_201_CREATED,
     response_model = ReceiptIDs
 )
-def create_receipt(receipt: Receipt):
+def create_receipt(receipt: ReceiptCreate):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -260,10 +267,11 @@ def get_receipt_by_receipt_id(receipt_id: int):
         receipt = cursor.fetchone()
 
         sharer_ids = []
-        sharer_ids.append(receipt['owner_id'])
-        for sharer in receipt['sharer_ids']:
-            if sharer:
-                sharer_ids.append(sharer)
+        if receipt:
+            sharer_ids.append(receipt['owner_id'])
+            for sharer in receipt['sharer_ids']:
+                if sharer:
+                    sharer_ids.append(sharer)
 
         if not receipt:
             raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
