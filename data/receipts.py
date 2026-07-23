@@ -157,6 +157,63 @@ def get_receipt_by_user_id(user_id: int):
         conn.close()
 
 @router.get(
+    "/users/sharers/{sharer_id}",
+    status_code = status.HTTP_200_OK,
+    response_model = list[ReceiptData]
+)
+def get_receipt_by_sharer_id(sharer_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+        LEFT JOIN receipt_sharers
+        ON receipts.receipt_id = receipt_sharers.receipt_id
+        WHERE receipt_sharers.sharer_id = %s
+        GROUP BY receipts.receipt_id""",
+                       (sharer_id,))
+
+        receipts = cursor.fetchall()
+
+        result = []
+        for receipt in receipts:
+            cursor.execute("""
+            SELECT * FROM items 
+            WHERE receipt_id = %s""",
+                           (receipt['receipt_id'],))
+            itemList = cursor.fetchall()
+            items = []
+            for item in itemList:
+                items.append(Item(amount = item['amount'],
+                                  title = item['title'],
+                                  item_count = item['item_count']))
+
+            sharer_ids = []
+            for sharer in receipt['sharer_ids']:
+                if sharer:
+                    sharer_ids.append(sharer)
+
+            result.append(ReceiptData(receipt_id = receipt['receipt_id'],
+                                      owner_id = receipt['owner_id'],
+                                      title = receipt['title'],
+                                      amount = receipt['amount'],
+                                      date = receipt['date'],
+                                      items = items,
+                                      sharer_ids = sharer_ids))
+
+        return result
+
+    except Exception as e:
+        print(type(e))
+        print(e)
+        raise
+
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.get(
     "/{receipt_id}",
     status_code=status.HTTP_200_OK,
     response_model = ReceiptData,

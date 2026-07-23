@@ -116,6 +116,41 @@ def get_user(username: str):
         cursor.close()
         conn.close()
 
+@router.get(
+    "/id/{user_id}",
+    status_code = status.HTTP_200_OK,
+    response_model = UserDetails
+)
+def get_user_by_id(user_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+        SELECT username, email, first_name, last_name, phone_number FROM users
+        WHERE user_id = %s""",
+                       (user_id,))
+
+        user = cursor.fetchone()
+
+        return (UserDetails(username = user['username'],
+                            user_id = user_id,
+                            email = user['email'],
+                            first_name = user['first_name'],
+                            last_name = user['last_name'],
+                            phone_number = user['phone_number']))
+
+    except TypeError:
+        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
+                            detail = "User not found")
+
+    except Exception as e:
+        print(type(e))
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.put(
     "/{user_id}",
 status_code = status.HTTP_200_OK
