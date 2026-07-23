@@ -101,31 +101,6 @@ def update_sharers(user_id: int, update_sharers_request: UpdateSharerRequest):
     else:
         return {"message": "Sharer removed"}
 
-# @router.put(
-#     "/{item_id}",
-#     status_code = status.HTTP_200_OK
-# )
-# def set_item_state(state: bool, item_id: int):
-#     conn = get_connection()
-#     cursor = conn.cursor()
-#
-#     try:
-#         cursor.execute("""
-#         UPDATE items SET paid = %s
-#         WHERE item_id = %s""",
-#                        (state, item_id))
-#         conn.commit()
-#
-#     except Exception as e:
-#         conn.rollback()
-#         print(type(e))
-#         print(e)
-#         raise
-#
-#     finally:
-#         cursor.close()
-#         conn.close()
-
 @router.delete(
     "/{item_id}",
     status_code = status.HTTP_200_OK
@@ -162,3 +137,27 @@ def initialize_items(cursor: cursor, receipt_id: int, items: list[Item]):
         item_ids.append(cursor.fetchone()['item_id'])
 
     return item_ids
+
+def get_items_of_receipt(cursor: cursor, receipt_id: int):
+    cursor.execute("""
+                  SELECT items.item_id, title, amount, item_count, 
+                  COALESCE(
+                    array_agg(item_payers.user_id)
+                    FILTER (WHERE item_payers.user_id IS NOT NULL),
+                    '{}'
+                    ) AS current_sharers
+                  FROM items LEFT JOIN item_payers
+                  ON items.item_id = item_payers.item_id
+                  WHERE items.receipt_id = %s
+                  GROUP BY items.item_id""",
+                           (receipt_id,))
+    itemList = cursor.fetchall()
+    items = []
+    for item in itemList:
+        if item:
+            items.append(ItemData(item_id = item['item_id'],
+                                  title = item['title'],
+                                  amount = item['amount'],
+                                  item_count = item['item_count'],
+                                  current_sharers = item['current_sharers']))
+    return items

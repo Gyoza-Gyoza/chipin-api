@@ -3,18 +3,18 @@ from pydantic import BaseModel, computed_field, Field
 from data.database import get_connection
 import decimal
 from datetime import datetime
-from data.items import Item, initialize_items
+from data.items import ItemData, get_items_of_receipt, initialize_items
 
 class Receipt(BaseModel):
     owner_id: int
     sharer_ids: list[int]
     title: str
     date: datetime = datetime.now()
-    items: list[Item]
+    items: list[ItemData] | None
 class ReceiptUpdate(BaseModel):
     title: str
     sharer_ids: list[int]
-    items: list[Item]
+    items: list[ItemData] | None
 class ReceiptIDs(BaseModel):
     receipt_id: int
     date: datetime
@@ -26,7 +26,7 @@ class ReceiptData(BaseModel):
     title: str
     date: datetime
     amount: decimal.Decimal = Field(10)
-    items: list[Item]
+    items: list[ItemData] | None
     @computed_field
     @property
     def service_tax_amount(self) -> decimal.Decimal:
@@ -119,17 +119,6 @@ def get_all_receipts_by_id(user_id: int):
 
         result = []
         for receipt in receipts:
-            cursor.execute("""
-                   SELECT * FROM items 
-                   WHERE receipt_id = %s""",
-                           (receipt['receipt_id'],))
-            itemList = cursor.fetchall()
-            items = []
-            for item in itemList:
-                items.append(Item(amount=item['amount'],
-                                  title=item['title'],
-                                  item_count=item['item_count']))
-
             sharer_ids = []
             sharer_ids.append(user_id)
             for sharer in receipt['sharer_ids']:
@@ -142,7 +131,7 @@ def get_all_receipts_by_id(user_id: int):
                                       title=receipt['title'],
                                       amount=receipt['amount'],
                                       date=receipt['date'],
-                                      items=items,
+                                      items=get_items_of_receipt(cursor, receipt['receipt_id']),
                                       sharer_ids=sharer_ids))
 
         return result
@@ -179,17 +168,6 @@ def get_receipt_by_user_id(user_id: int):
 
         result = []
         for receipt in receipts:
-            cursor.execute("""
-            SELECT * FROM items 
-            WHERE receipt_id = %s""",
-                           (receipt['receipt_id'],))
-            itemList = cursor.fetchall()
-            items = []
-            for item in itemList:
-                items.append(Item(amount = item['amount'],
-                                  title = item['title'],
-                                  item_count = item['item_count']))
-
             sharer_ids = []
             sharer_ids.append(user_id)
             for sharer in receipt['sharer_ids']:
@@ -201,7 +179,7 @@ def get_receipt_by_user_id(user_id: int):
                                       title = receipt['title'],
                                       amount = receipt['amount'],
                                       date = receipt['date'],
-                                      items = items,
+                                      items = get_items_of_receipt(cursor, receipt['receipt_id']),
                                       sharer_ids = sharer_ids))
 
         return result
@@ -237,17 +215,6 @@ def get_receipt_by_sharer_id(sharer_id: int):
 
         result = []
         for receipt in receipts:
-            cursor.execute("""
-            SELECT * FROM items 
-            WHERE receipt_id = %s""",
-                           (receipt['receipt_id'],))
-            itemList = cursor.fetchall()
-            items = []
-            for item in itemList:
-                items.append(Item(amount = item['amount'],
-                                  title = item['title'],
-                                  item_count = item['item_count']))
-
             sharer_ids = []
             sharer_ids.append(receipt['owner_id'])
             for sharer in receipt['sharer_ids']:
@@ -259,7 +226,7 @@ def get_receipt_by_sharer_id(sharer_id: int):
                                       title = receipt['title'],
                                       amount = receipt['amount'],
                                       date = receipt['date'],
-                                      items = items,
+                                      items = get_items_of_receipt(cursor, receipt['receipt_id']),
                                       sharer_ids = sharer_ids))
 
         return result
@@ -283,22 +250,6 @@ def get_receipt_by_receipt_id(receipt_id: int):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
-        SELECT * FROM receipts 
-        LEFT JOIN items on receipts.receipt_id = items.receipt_id
-        WHERE receipts.receipt_id = %s""",
-                       (receipt_id,))
-        row = cursor.fetchall()
-
-        if not row:
-            raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
-                                detail = "No items found")
-        items = []
-        for item in row:
-            items.append(Item(amount = item['amount'],
-                              title = item['title'],
-                              item_count= item['item_count']))
-
         cursor.execute("""
         SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
         LEFT JOIN receipt_sharers
@@ -324,7 +275,7 @@ def get_receipt_by_receipt_id(receipt_id: int):
                                        title = receipt['title'],
                                        amount = receipt['amount'],
                                        date = receipt['date'],
-                                       items = items,
+                                       items = get_items_of_receipt(cursor, receipt['receipt_id']),
                                        sharer_ids = sharer_ids)
             return receipt_data
     except Exception as e:

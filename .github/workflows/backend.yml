@@ -181,7 +181,7 @@ jobs:
       - name: Send discord notification
         run: |
           curl -v \
-          -X POST https://discord.com/api/webhooks/1529727018349101137/kobfJRjCN8Z0tw8_B8mN4ikc3PIrTPGFG0r7HFliyJXSWbNx9xlCoBkzr_Csh5l2oYjQ \
+          -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
           -H "Content-Type: application/json" \
           -d '{
             "content": "Commit: ${{ github.event.head_commit.message }}"
