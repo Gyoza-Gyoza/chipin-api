@@ -190,6 +190,7 @@ def get_receipt_by_sharer_id(sharer_id: int):
                                   item_count = item['item_count']))
 
             sharer_ids = []
+            sharer_ids.append(receipt['owner_id'])
             for sharer in receipt['sharer_ids']:
                 if sharer:
                     sharer_ids.append(sharer)
@@ -308,7 +309,7 @@ def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
 
         conn.commit()
         return {"message": "Receipt updated successfully"}
-    
+
     except Exception as e:
         conn.rollback()
         print(type(e))
