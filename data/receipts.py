@@ -285,9 +285,19 @@ def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
 
     try:
         cursor.execute("""
-        UPDATE receipts SET title = %s 
+        UPDATE receipts SET title = %s
         WHERE receipt_id = %s""",
                        (new_receipt.title, receipt_id))
+
+        cursor.execute("""
+        DELETE FROM receipt_sharers 
+        WHERE receipt_id = %s""", (receipt_id,))
+
+        for sharers in new_receipt.sharer_ids:
+            cursor.execute("""
+            INSERT INTO receipt_sharers
+            (receipt_id, sharer_id)
+            VALUES (%s, %s)""", (receipt_id, sharers))
 
         cursor.execute("""
         DELETE FROM items
@@ -297,7 +307,8 @@ def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
         initialize_items(cursor, receipt_id, new_receipt.items)
 
         conn.commit()
-
+        return {"message": "Receipt updated successfully"}
+    
     except Exception as e:
         conn.rollback()
         print(type(e))
