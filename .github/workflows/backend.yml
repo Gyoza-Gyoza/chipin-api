@@ -182,7 +182,7 @@ jobs:
         run: |
           curl -v \
           -X POST https://discord.com/api/webhooks/1529728742639931444/bbKGBogT3WaCUccHHauerOcmKta57f5Ds_XSuqfjBZZghgp9JJAjMUYlFuH2oqZu8x4o \
-          -H "Content-Type: application/json" \ 
+          -H "Content-Type: application/json" \
           -d '{
             "content": "Commit: ${{ github.event.head_commit.message }} du bist gut genung, go use it"
           }'
