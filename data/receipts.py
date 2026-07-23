@@ -136,7 +136,7 @@ def get_all_receipts_by_id(user_id: int):
                 if sharer:
                     if sharer not in sharer_ids:
                         sharer_ids.append(sharer)
-asdqwe
+
             result.append(ReceiptData(receipt_id=receipt['receipt_id'],
                                       owner_id=receipt['owner_id'],
                                       title=receipt['title'],
