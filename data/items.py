@@ -63,8 +63,47 @@ def get_item_data(item_id: int):
     finally:
         cursor.close()
         conn.close()
+
 @router.put(
     "/paid_by/{user_id}",
+    status_code = status.HTTP_200_OK
+)
+def update_paid(user_id, update_sharers_request: UpdateSharerRequest):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        for item_id in update_sharers_request.item_ids:
+            cursor.execute("""
+            SELECT * FROM item_payers
+            WHERE item_id = %s AND user_id = %s""",
+                           (item_id, user_id))
+            row = cursor.fetchone()
+
+            if row:
+                cursor.execute("""
+                UPDATE item_payers SET paid = %s
+                WHERE item_id = %s AND user_id = %s""",
+                               (update_sharers_request.state, item_id, user_id))
+                conn.commit()
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="Entry not found")
+
+    except Exception as e:
+        conn.rollback()
+        print(type(e))
+        print(e)
+        raise
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return {"message": "Sharer updated"}
+
+@router.put(
+    "/claimed_by/{user_id}",
     status_code = status.HTTP_200_OK
 )
 def update_sharers(user_id: int, update_sharers_request: UpdateSharerRequest):

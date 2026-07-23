@@ -19,7 +19,7 @@ def test_update_sharers(created_user, created_receipt):
         item_ids.append(item['item_id'])
 
     response = client.put(
-        f"/items/paid_by/{created_user['user_id']}",
+        f"/items/claimed_by/{created_user['user_id']}",
         json = UpdateSharerRequest(item_ids = item_ids,
                                    state = False).model_dump(mode = "json")
     )
@@ -31,7 +31,7 @@ def test_update_sharers(created_user, created_receipt):
     assert updated_item['current_sharers'].count(created_user['user_id']) == 0
 
     response = client.put(
-        f"/items/paid_by/{created_user['user_id']}",
+        f"/items/claimed_by/{created_user['user_id']}",
         json = UpdateSharerRequest(item_ids = item_ids,
                                  state = True).model_dump(mode = "json")
     )

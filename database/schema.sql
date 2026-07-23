@@ -1,6 +1,7 @@
 CREATE TABLE public.item_payers (
     item_id integer NOT NULL,
-    user_id integer NOT NULL
+    user_id integer NOT NULL,
+    paid boolean DEFAULT false NOT NULL
 );
 
 CREATE TABLE public.items (
