@@ -119,15 +119,14 @@ def get_all_receipts_by_id(user_id: int):
         FROM receipts LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
         WHERE receipts.owner_id = %s OR receipt_sharers.sharer_id = %s
-        GROUP BY receipts.receipt_id """,
+        GROUP BY receipts.receipt_id""",
                        (user_id, user_id))
 
         receipts = cursor.fetchall()
 
         result = []
         for receipt in receipts:
-            sharer_ids = []
-            sharer_ids.append(user_id)
+            sharer_ids = [receipt['owner_id'],]
             for sharer in receipt['sharer_ids']:
                 if sharer:
                     if sharer not in sharer_ids:

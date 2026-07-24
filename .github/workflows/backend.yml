@@ -184,5 +184,5 @@ jobs:
           -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
           -H "Content-Type: application/json" \
           -d '{
-            "content": "Commit: ${{ github.event.head_commit.message }}"
+            "content": "New build up: ${{ github.event.head_commit.message }}"
           }'
