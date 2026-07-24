@@ -33,7 +33,7 @@ CREATE TABLE public.receipts (
     amount numeric NOT NULL,
     title character varying CONSTRAINT receipts_description_not_null NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
-    date timestamp with time zone
+    date timestamp with time zone,
     qr_ready bool DEFAULT false NOT NULL
 );
 
