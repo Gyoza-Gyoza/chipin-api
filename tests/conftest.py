@@ -20,8 +20,7 @@ def test_receipt(test_item, created_user):
 def test_receipt_update(test_item_update, created_user):
     return ReceiptUpdate(title = "Alternate Test Receipt",
                          items = [test_item_update],
-                         sharer_ids = [created_user['user_id'],],
-                         qr_ready = True)
+                         sharer_ids = [created_user['user_id'],])
 @pytest.fixture
 def created_receipt(test_receipt):
     client = TestClient(app)

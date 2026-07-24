@@ -23,7 +23,8 @@ class ReceiptUpdate(BaseModel):
     title: str
     sharer_ids: list[int]
     items: list[Item]
-    qr_ready: bool
+class QRReadyUpdate(BaseModel):
+    state: bool
 class ReceiptIDs(BaseModel):
     receipt_id: int
     date: datetime
@@ -268,9 +269,9 @@ def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
 
     try:
         cursor.execute("""
-        UPDATE receipts SET title = %s, qr_ready = %s
+        UPDATE receipts SET title = %s
         WHERE receipt_id = %s""",
-                       (new_receipt.title, new_receipt.qr_ready, receipt_id))
+                       (new_receipt.title, receipt_id))
 
         cursor.execute("""
         DELETE FROM receipt_sharers 
@@ -302,6 +303,27 @@ def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
         cursor.close()
         conn.close()
 
+@router.put(
+    "/qr_ready/{receipt_id}",
+    status_code = status.HTTP_200_OK
+)
+def make_receipt_qr_ready(receipt_id: int, state: QRReadyUpdate):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        UPDATE receipts SET qr_ready = %s
+        WHERE receipt_id = %s""", (state.state, receipt_id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(type(e))
+        print(e)
+        raise
+    finally:
+        cursor.close()
+        conn.close()
 
 @router.delete(
     "/{receipt_id}",
