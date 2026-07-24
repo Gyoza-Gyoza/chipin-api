@@ -4,6 +4,7 @@ from data.database import get_connection
 import decimal
 from datetime import datetime
 from data.items import Item, ItemData, get_items_of_receipt, initialize_items
+from psycopg import cursor
 
 class Receipt(BaseModel):
     owner_id: int
@@ -115,30 +116,14 @@ def get_all_receipts_by_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids 
-        FROM receipts LEFT JOIN receipt_sharers
+        SELECT receipts.receipt_id FROM receipts LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
-        WHERE receipts.owner_id = %s OR receipt_sharers.sharer_id = %s
-        GROUP BY receipts.receipt_id""",
+        WHERE owner_id = %s OR sharer_id = %s""",
                        (user_id, user_id))
-
-        receipts = cursor.fetchall()
-
+        rows = cursor.fetchall()
         result = []
-        for receipt in receipts:
-            sharer_ids = [receipt['owner_id'],]
-            for sharer in receipt['sharer_ids']:
-                if sharer:
-                    if sharer not in sharer_ids:
-                        sharer_ids.append(sharer)
-
-            result.append(ReceiptData(receipt_id=receipt['receipt_id'],
-                                      owner_id=receipt['owner_id'],
-                                      title=receipt['title'],
-                                      amount=receipt['amount'],
-                                      date=receipt['date'],
-                                      items=get_items_of_receipt(cursor, receipt['receipt_id']),
-                                      sharer_ids=sharer_ids))
+        for row in rows:
+            result.append(get_receipt_by_id(cursor, row['receipt_id']))
 
         return result
 
@@ -256,36 +241,7 @@ def get_receipt_by_receipt_id(receipt_id: int):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
-        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
-        LEFT JOIN receipt_sharers
-        ON receipts.receipt_id = receipt_sharers.receipt_id
-        WHERE receipts.receipt_id = %s
-        GROUP BY receipts.receipt_id""",
-                       (receipt_id,))
-        receipt = cursor.fetchone()
-
-        sharer_ids = []
-        if receipt:
-            sharer_ids.append(receipt['owner_id'])
-            for sharer in receipt['sharer_ids']:
-                if sharer:
-                    if sharer not in sharer_ids:
-                        sharer_ids.append(sharer)
-
-        if not receipt:
-            raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,
-                                detail = "No receipts found")
-
-        else:
-            receipt_data = ReceiptData(receipt_id = receipt_id,
-                                       owner_id = receipt['owner_id'],
-                                       title = receipt['title'],
-                                       amount = receipt['amount'],
-                                       date = receipt['date'],
-                                       items = get_items_of_receipt(cursor, receipt['receipt_id']),
-                                       sharer_ids = sharer_ids)
-            return receipt_data
+        return get_receipt_by_id(cursor, receipt_id)
     except Exception as e:
         print(type(e))
         print(e)
@@ -363,3 +319,35 @@ def delete_receipt(receipt_id: int):
     finally:
         cursor.close()
         conn.close()
+
+def get_receipt_by_id(cursor: cursor, receipt_id: int):
+    cursor.execute("""
+           SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+           LEFT JOIN receipt_sharers
+           ON receipts.receipt_id = receipt_sharers.receipt_id
+           WHERE receipts.receipt_id = %s
+           GROUP BY receipts.receipt_id""",
+                   (receipt_id,))
+    receipt = cursor.fetchone()
+
+    sharer_ids = []
+    if receipt:
+        sharer_ids.append(receipt['owner_id'])
+        for sharer in receipt['sharer_ids']:
+            if sharer:
+                if sharer not in sharer_ids:
+                    sharer_ids.append(sharer)
+
+    if not receipt:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="No receipts found")
+
+    else:
+        receipt_data = ReceiptData(receipt_id=receipt_id,
+                                   owner_id=receipt['owner_id'],
+                                   title=receipt['title'],
+                                   amount=receipt['amount'],
+                                   date=receipt['date'],
+                                   items=get_items_of_receipt(cursor, receipt['receipt_id']),
+                                   sharer_ids=sharer_ids)
+    return receipt_data
