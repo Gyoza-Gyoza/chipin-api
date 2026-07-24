@@ -22,8 +22,14 @@ class ReceiptData(BaseModel):
     owner_id: int
     title: str
     date: datetime
-    amount: decimal.Decimal = Field(10)
     items: list[Item]
+    @computed_field
+    @property
+    def amount(self) -> decimal.Decimal:
+        result = decimal.Decimal(0)
+        for item in self.items:
+            result += item.amount
+        return result
     @computed_field
     @property
     def service_tax_amount(self) -> decimal.Decimal:
@@ -123,7 +129,6 @@ def get_receipt_by_user_id(user_id: int):
             result.append(ReceiptData(receipt_id = receipt['receipt_id'],
                                       owner_id = receipt['owner_id'],
                                       title = receipt['title'],
-                                      amount = receipt['amount'],
                                       date = receipt['date'],
                                       items = items))
 
@@ -178,7 +183,6 @@ def get_receipt_by_receipt_id(receipt_id: int):
             receipt_data = ReceiptData(receipt_id = receipt_id,
                                        owner_id = receipt['owner_id'],
                                        title = receipt['title'],
-                                       amount = receipt['amount'],
                                        date = receipt['date'],
                                        items = items)
             return receipt_data

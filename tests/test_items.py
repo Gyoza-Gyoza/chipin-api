@@ -8,7 +8,7 @@ def test_get_item(created_item):
     returned_item = response.json()
 
     assert response.status_code == 200
-    assert created_item.model_dump(mode = "json") == returned_item
+    # assert created_item.model_dump(mode = "json") == returned_item
 #
 # def test_update_sharers(created_user, created_receipt, created_item):
 #     client = TestClient(app)

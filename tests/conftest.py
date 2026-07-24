@@ -85,7 +85,6 @@ def created_item(test_item, created_receipt):
 
     return ItemData(item_id = item_id,
                     title = test_item.title,
-                    amount = test_item.amount,
                     item_count = test_item.item_count,
                     current_sharers = user_ids)
 @pytest.fixture
