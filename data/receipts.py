@@ -124,7 +124,7 @@ def get_all_receipts_by_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipts.receipt_id FROM receipts LEFT JOIN receipt_sharers
+        SELECT DISTINCT(receipts.receipt_id) FROM receipts LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
         WHERE owner_id = %s OR sharer_id = %s""",
                        (user_id, user_id))
