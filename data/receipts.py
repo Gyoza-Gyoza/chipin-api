@@ -23,6 +23,7 @@ class ReceiptUpdate(BaseModel):
     title: str
     sharer_ids: list[int]
     items: list[Item]
+    qr_ready: bool
 class ReceiptIDs(BaseModel):
     receipt_id: int
     date: datetime
@@ -34,6 +35,7 @@ class ReceiptData(BaseModel):
     title: str
     date: datetime
     items: list[ItemData] | None
+    qr_ready: bool
     @computed_field
     @property
     def amount(self) -> decimal.Decimal:
@@ -154,7 +156,7 @@ def get_receipt_by_user_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+        SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
         LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
         WHERE owner_id = %s
@@ -176,7 +178,8 @@ def get_receipt_by_user_id(user_id: int):
                                       title = receipt['title'],
                                       date = receipt['date'],
                                       items = get_items_of_receipt(cursor, receipt['receipt_id']),
-                                      sharer_ids = sharer_ids))
+                                      sharer_ids = sharer_ids,
+                                      qr_ready = receipt['qr_ready']))
 
         return result
 
@@ -200,7 +203,7 @@ def get_receipt_by_sharer_id(sharer_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+        SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
         LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
         WHERE receipt_sharers.sharer_id = %s
@@ -222,7 +225,8 @@ def get_receipt_by_sharer_id(sharer_id: int):
                                       title = receipt['title'],
                                       date = receipt['date'],
                                       items = get_items_of_receipt(cursor, receipt['receipt_id']),
-                                      sharer_ids = sharer_ids))
+                                      sharer_ids = sharer_ids,
+                                      qr_ready = receipt['qr_ready']))
 
         return result
 
@@ -264,9 +268,9 @@ def update_receipt(receipt_id: int, new_receipt: ReceiptUpdate):
 
     try:
         cursor.execute("""
-        UPDATE receipts SET title = %s
+        UPDATE receipts SET title = %s, qr_ready = %s
         WHERE receipt_id = %s""",
-                       (new_receipt.title, receipt_id))
+                       (new_receipt.title, new_receipt.qr_ready, receipt_id))
 
         cursor.execute("""
         DELETE FROM receipt_sharers 
@@ -326,7 +330,7 @@ def delete_receipt(receipt_id: int):
 
 def get_receipt_by_id(cursor: cursor, receipt_id: int):
     cursor.execute("""
-           SELECT receipts.receipt_id, owner_id, title, amount, date, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+           SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
            LEFT JOIN receipt_sharers
            ON receipts.receipt_id = receipt_sharers.receipt_id
            WHERE receipts.receipt_id = %s
@@ -350,8 +354,8 @@ def get_receipt_by_id(cursor: cursor, receipt_id: int):
         receipt_data = ReceiptData(receipt_id=receipt_id,
                                    owner_id=receipt['owner_id'],
                                    title=receipt['title'],
-                                   amount=receipt['amount'],
                                    date=receipt['date'],
                                    items=get_items_of_receipt(cursor, receipt['receipt_id']),
-                                   sharer_ids=sharer_ids)
+                                   sharer_ids=sharer_ids,
+                                   qr_ready=receipt['qr_ready'])
     return receipt_data
