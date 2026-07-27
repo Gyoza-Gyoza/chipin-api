@@ -159,6 +159,7 @@ def update_user(user_id: str, user: User):
     conn = get_connection()
     cursor = conn.cursor()
 
+    hashed_password = passwordHasher.hash(user.password)
     cursor.execute("""
     UPDATE users set username= %(username)s, 
     password= %(password)s, 
@@ -172,7 +173,7 @@ def update_user(user_id: str, user: User):
                     'last_name': user.last_name,
                     'email': user.email,
                     'username': user.username,
-                    'password': user.password,
+                    'password': hashed_password,
                     'phone_number': user.phone_number})
 
     conn.commit()
