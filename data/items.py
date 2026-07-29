@@ -18,6 +18,7 @@ class UpdateSharerRequest(BaseModel):
     item_ids: list[int]
     state: bool
 
+
 router = APIRouter(
     prefix = "/items",
     tags = ["Items"]

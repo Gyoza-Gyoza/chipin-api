@@ -1,7 +1,7 @@
 ﻿from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, computed_field, Field
 from data.database import get_connection
-import decimal
+from decimal import Decimal
 from datetime import datetime
 from data.items import Item, ItemData, get_items_of_receipt, initialize_items
 from psycopg import cursor
@@ -19,16 +19,28 @@ class ReceiptCreate(BaseModel):
     title: str
     date: datetime = datetime.now()
     items: list[Item] | None
+
 class ReceiptUpdate(BaseModel):
     title: str
     sharer_ids: list[int]
     items: list[Item]
+
 class QRReadyUpdate(BaseModel):
     state: bool
+
 class ReceiptIDs(BaseModel):
     receipt_id: int
     date: datetime
     item_ids: list[int]
+
+class TaxData(BaseModel):
+    current_service_tax: Decimal = Decimal('0.1')
+    current_gst: Decimal = Decimal('0.09')
+
+class TaxActive(BaseModel):
+    service_tax: bool = False
+    gst: bool = False
+
 class ReceiptData(BaseModel):
     receipt_id: int
     owner_id: int
@@ -37,28 +49,32 @@ class ReceiptData(BaseModel):
     date: datetime
     items: list[ItemData] | None
     qr_ready: bool
+    tax_data: TaxData = Field(default_factory=TaxData)
+    tax_active: TaxActive
     @computed_field
     @property
-    def amount(self) -> decimal.Decimal:
-        result = decimal.Decimal(0)
+    def amount(self) -> Decimal:
+        total = Decimal(0)
         for item in self.items:
-            result += item.amount
-        return result
-    @computed_field
-    @property
-    def service_tax_amount(self) -> decimal.Decimal:
-        return self.amount + self.amount * current_service_tax
-    @computed_field
-    @property
-    def gst_amount(self) -> decimal.Decimal:
-        return self.amount + self.amount * current_gst
-    @computed_field
-    @property
-    def both_amount(self) -> decimal.Decimal:
-        return self.amount + self.amount * (current_service_tax + current_gst)
-
-current_service_tax = decimal.Decimal('0.1')
-current_gst = decimal.Decimal('0.09')
+            total += item.amount
+        total_tax = 1
+        if self.tax_active.service_tax:
+            total_tax += self.tax_data.current_service_tax
+        if self.tax_active.gst:
+            total_tax += self.tax_data.current_gst
+        return total * total_tax
+    # @computed_field
+    # @property
+    # def service_tax_amount(self) -> decimal.Decimal:
+    #     return self.amount + self.amount * self.tax_data.current_service_tax
+    # @computed_field
+    # @property
+    # def gst_amount(self) -> decimal.Decimal:
+    #     return self.amount + self.amount * self.tax_data.current_gst
+    # @computed_field
+    # @property
+    # def both_amount(self) -> decimal.Decimal:
+    #     return self.amount + self.amount * (self.tax_data.current_service_tax + self.tax_data.current_gst)
 
 router = APIRouter(
     prefix = "/receipts",
@@ -157,7 +173,7 @@ def get_receipt_by_user_id(user_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+        SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, service_tax, gst, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
         LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
         WHERE owner_id = %s
@@ -180,7 +196,9 @@ def get_receipt_by_user_id(user_id: int):
                                       date = receipt['date'],
                                       items = get_items_of_receipt(cursor, receipt['receipt_id']),
                                       sharer_ids = sharer_ids,
-                                      qr_ready = receipt['qr_ready']))
+                                      qr_ready = receipt['qr_ready'],
+                                      tax_active = TaxActive(service_tax=receipt['service_tax'],
+                                                           gst=receipt['gst'])))
 
         return result
 
@@ -204,7 +222,7 @@ def get_receipt_by_sharer_id(sharer_id: int):
 
     try:
         cursor.execute("""
-        SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+        SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, service_tax, gst, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
         LEFT JOIN receipt_sharers
         ON receipts.receipt_id = receipt_sharers.receipt_id
         WHERE receipt_sharers.sharer_id = %s
@@ -227,7 +245,9 @@ def get_receipt_by_sharer_id(sharer_id: int):
                                       date = receipt['date'],
                                       items = get_items_of_receipt(cursor, receipt['receipt_id']),
                                       sharer_ids = sharer_ids,
-                                      qr_ready = receipt['qr_ready']))
+                                      qr_ready = receipt['qr_ready'],
+                                      tax_active = TaxActive(service_tax=receipt['service_tax'],
+                                                           gst=receipt['gst'])))
 
         return result
 
@@ -325,6 +345,31 @@ def make_receipt_qr_ready(receipt_id: int, state: QRReadyUpdate):
         cursor.close()
         conn.close()
 
+@router.put(
+    "/tax_data/{receipt_id}",
+    status_code = status.HTTP_200_OK
+)
+def add_service_tax(receipt_id: int, tax_active: TaxActive):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        UPDATE receipts SET service_tax = %s, gst = %s 
+        WHERE receipt_id = %s""",
+                       (tax_active.service_tax, tax_active.gst, receipt_id))
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        print(type(e))
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.delete(
     "/{receipt_id}",
     status_code = status.HTTP_204_NO_CONTENT
@@ -352,7 +397,7 @@ def delete_receipt(receipt_id: int):
 
 def get_receipt_by_id(cursor: cursor, receipt_id: int):
     cursor.execute("""
-           SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
+           SELECT receipts.receipt_id, owner_id, title, amount, date, qr_ready, service_tax, gst, array_agg(receipt_sharers.sharer_id) AS sharer_ids FROM receipts
            LEFT JOIN receipt_sharers
            ON receipts.receipt_id = receipt_sharers.receipt_id
            WHERE receipts.receipt_id = %s
@@ -379,5 +424,7 @@ def get_receipt_by_id(cursor: cursor, receipt_id: int):
                                    date=receipt['date'],
                                    items=get_items_of_receipt(cursor, receipt['receipt_id']),
                                    sharer_ids=sharer_ids,
-                                   qr_ready=receipt['qr_ready'])
+                                   qr_ready=receipt['qr_ready'],
+                                   tax_active=TaxActive(service_tax=receipt['service_tax'],
+                                                        gst=receipt['gst']))
     return receipt_data

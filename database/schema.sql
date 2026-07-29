@@ -35,6 +35,8 @@ CREATE TABLE public.receipts (
     created_at timestamp with time zone DEFAULT now(),
     date timestamp with time zone,
     qr_ready bool DEFAULT false NOT NULL
+    service_tax bool DEFAULT false NOT NULL
+    gst bool DEFAULT false NOT NULL
 );
 
 CREATE SEQUENCE public.receipts_receipt_id_seq
