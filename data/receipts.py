@@ -57,12 +57,11 @@ class ReceiptData(BaseModel):
         total = Decimal(0)
         for item in self.items:
             total += item.amount
-        total_tax = 1
         if self.tax_active.service_tax:
-            total_tax += self.tax_data.current_service_tax
+            total += total * self.tax_data.current_service_tax
         if self.tax_active.gst:
-            total_tax += self.tax_data.current_gst
-        return total * total_tax
+            total += total * self.tax_data.current_gst
+        return round(total, 2)
     # @computed_field
     # @property
     # def service_tax_amount(self) -> decimal.Decimal:
